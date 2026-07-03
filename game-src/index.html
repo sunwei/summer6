@@ -1,0 +1,45 @@
+<!-- This file is the browser entry page that loads Phaser and starts the game. -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>小北寻龙记</title>
+    <link rel="icon" type="image/svg+xml" href="./assets/favicon.svg" />
+    <link rel="shortcut icon" href="./assets/favicon.svg" />
+    <style>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+      }
+
+      #game {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      canvas {
+        display: block;
+      }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "phaser": "https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.esm.min.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="game"></div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>

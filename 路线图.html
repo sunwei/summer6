@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小北寻龙记·五岳气运之旅 2026</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0e1a;
+    color: #e8d5a3;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    text-align: center;
+    padding: 40px 20px 20px;
+    background: linear-gradient(180deg, #0d1528 0%, transparent 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(255,180,50,0.12) 0%, transparent 70%);
+  }
+  .header h1 {
+    font-size: 2.2rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    position: relative;
+  }
+  .header .subtitle {
+    margin-top: 8px;
+    font-size: 1rem;
+    color: #a09070;
+    letter-spacing: 0.2em;
+    position: relative;
+  }
+  .header .meta {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    position: relative;
+  }
+  .meta-tag {
+    background: rgba(255,215,0,0.1);
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 20px;
+    padding: 4px 14px;
+    font-size: 0.82rem;
+    color: #ffd700;
+  }
+
+  /* ── Map Container ── */
+  .map-section {
+    max-width: 1100px;
+    margin: 30px auto 0;
+    padding: 0 20px;
+  }
+  .map-wrapper {
+    position: relative;
+    background: linear-gradient(135deg, #0d1a2e 0%, #0a1520 50%, #0d1a2e 100%);
+    border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(255,140,0,0.08), inset 0 0 60px rgba(0,0,50,0.3);
+  }
+  .map-wrapper svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin: 16px 0;
+    padding: 0 20px;
+    font-size: 0.82rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: #a09070;
+  }
+  .legend-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── Stops Grid ── */
+  .stops-section {
+    max-width: 1100px;
+    margin: 30px auto 0;
+    padding: 0 20px;
+  }
+  .stops-section h2 {
+    font-size: 1.1rem;
+    color: #ffd700;
+    letter-spacing: 0.15em;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,215,0,0.2);
+  }
+  .stops-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+  }
+  .stop-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .stop-card:hover {
+    border-color: rgba(255,215,0,0.4);
+    background: rgba(255,215,0,0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  }
+  .stop-card.mountain { border-left: 3px solid #ff8c00; }
+  .stop-card.culture  { border-left: 3px solid #4fc3f7; }
+  .stop-card.start    { border-left: 3px solid #69f0ae; }
+  .stop-card.bonus    { border-left: 3px solid #ce93d8; }
+  .stop-card .card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .stop-number {
+    width: 28px; height: 28px;
+    background: rgba(255,215,0,0.15);
+    border: 1px solid rgba(255,215,0,0.4);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    color: #ffd700;
+    flex-shrink: 0;
+    font-weight: bold;
+  }
+  .card-title { font-size: 1rem; font-weight: 700; color: #f0e0b0; }
+  .card-subtitle { font-size: 0.78rem; color: #7a6a50; margin-top: 1px; }
+  .card-days {
+    position: absolute; top: 14px; right: 14px;
+    background: rgba(255,215,0,0.1);
+    border: 1px solid rgba(255,215,0,0.2);
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-size: 0.72rem;
+    color: #ffd700;
+  }
+  .card-tags {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+  }
+  .tag {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid;
+  }
+  .tag.mountain-tag { color: #ff8c00; border-color: rgba(255,140,0,0.4); background: rgba(255,140,0,0.08); }
+  .tag.crystal-tag  { color: #ffd700; border-color: rgba(255,215,0,0.4); background: rgba(255,215,0,0.08); }
+  .tag.food-tag     { color: #81c784; border-color: rgba(129,199,132,0.4); background: rgba(129,199,132,0.08); }
+  .tag.culture-tag  { color: #4fc3f7; border-color: rgba(79,195,247,0.4); background: rgba(79,195,247,0.08); }
+  .tag.bonus-tag    { color: #ce93d8; border-color: rgba(206,147,216,0.4); background: rgba(206,147,216,0.08); }
+  .tag.dev-tag      { color: #80cbc4; border-color: rgba(128,203,196,0.4); background: rgba(128,203,196,0.08); }
+  .tag.camp-tag     { color: #26c6da; border-color: rgba(38,198,218,0.4); background: rgba(38,198,218,0.08); }
+  .tag.star-tag     { color: #fff176; border-color: rgba(255,241,118,0.4); background: rgba(255,241,118,0.08); }
+  .drive-info {
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: #6a5a40;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    max-width: 1100px;
+    margin: 24px auto;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .stat-box {
+    background: rgba(255,215,0,0.05);
+    border: 1px solid rgba(255,215,0,0.15);
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+  }
+  .stat-number {
+    font-size: 1.8rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-label {
+    font-size: 0.75rem;
+    color: #7a6a50;
+    margin-top: 4px;
+    letter-spacing: 0.1em;
+  }
+
+  /* ── Crystal progress ── */
+  .crystal-section {
+    max-width: 1100px;
+    margin: 0 auto 40px;
+    padding: 0 20px;
+  }
+  .crystal-section h2 {
+    font-size: 1.1rem;
+    color: #ffd700;
+    letter-spacing: 0.15em;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255,215,0,0.2);
+  }
+  .crystals {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .crystal-card {
+    flex: 1; min-width: 150px; max-width: 190px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: all 0.25s;
+  }
+  .crystal-card:hover { transform: translateY(-3px); }
+  .crystal-card.done { border-color: rgba(255,215,0,0.4); background: rgba(255,215,0,0.05); }
+  .crystal-icon { font-size: 2.2rem; margin-bottom: 8px; }
+  .crystal-name { font-size: 0.85rem; font-weight: 700; margin-bottom: 4px; }
+  .crystal-mountain { font-size: 0.75rem; color: #7a6a50; margin-bottom: 6px; }
+  .crystal-skill {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 8px;
+    display: inline-block;
+    margin-top: 4px;
+  }
+  .crystal-status {
+    font-size: 0.72rem;
+    margin-top: 8px;
+    padding: 2px 8px;
+    border-radius: 8px;
+  }
+  .status-done { background: rgba(105,240,174,0.15); color: #69f0ae; }
+  .status-todo { background: rgba(255,255,255,0.06); color: #6a5a40; }
+
+  footer {
+    text-align: center;
+    padding: 20px;
+    color: #3a2a10;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+  }
+  /* ── Tooltip ── */
+  #tt {
+    position: fixed;
+    display: none;
+    background: linear-gradient(145deg, rgba(8,14,30,0.97), rgba(13,20,40,0.97));
+    border: 1px solid rgba(255,215,0,0.35);
+    border-radius: 12px;
+    padding: 14px 16px;
+    max-width: 300px;
+    min-width: 200px;
+    pointer-events: none;
+    z-index: 9999;
+    font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    color: #e8d5a3;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 20px rgba(255,215,0,0.1);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    backdrop-filter: blur(4px);
+  }
+  #tt .tt-title { font-size: 1rem; font-weight: 700; color: #ffd700; margin-bottom: 4px; }
+  #tt .tt-days  { font-size: 0.75rem; color: #a09070; margin-bottom: 8px; letter-spacing:0.05em; }
+  #tt .tt-section { margin-top: 7px; }
+  #tt .tt-label { font-size: 0.7rem; color: #6a5040; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  #tt .tt-item { font-size: 0.78rem; color: #c8b890; padding-left: 8px; margin-bottom: 2px; }
+  #tt .tt-item::before { content: '▸ '; color: #ffd700; opacity: 0.6; }
+  #tt .tt-free { color: #81c784; }
+  #tt .tt-free::before { content: '✓ '; color: #81c784; }
+  #tt .tt-camp { color: #26c6da; }
+  #tt .tt-camp::before { content: '⛺ '; }
+  #tt .tt-note { margin-top: 8px; font-size: 0.72rem; color: #7a6a50; border-top: 1px solid rgba(255,215,0,0.1); padding-top: 6px; font-style: italic; }
+  #tt .tt-desc { font-size: 0.8rem; color: #c8b890; margin-bottom: 4px; }
+  svg [data-tip] { cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>🐉 小北寻龙记·五岳气运之旅</h1>
+  <div class="subtitle">2026暑假 · 自驾 · 30天 · 四晶寻龙 · 🏕️4夜露营</div>
+  <div class="meta">
+    <span class="meta-tag">📍 武汉出发</span>
+    <span class="meta-tag">🚗 自驾约3500km</span>
+    <span class="meta-tag">🏔️ 登顶四岳</span>
+    <span class="meta-tag">🎮 开发Web游戏</span>
+    <span class="meta-tag">👨‍👦 爸爸 + 小北</span>
+  </div>
+</div>
+
+<!-- Map -->
+<div class="map-section">
+  <div class="map-wrapper">
+    <svg viewBox="0 0 900 600" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <!-- Gradient for route line -->
+        <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#ff8c00;stop-opacity:0.8"/>
+          <stop offset="50%" style="stop-color:#ffd700;stop-opacity:1"/>
+          <stop offset="100%" style="stop-color:#ff8c00;stop-opacity:0.8"/>
+        </linearGradient>
+        <!-- Glow filter -->
+        <filter id="glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-strong">
+          <feGaussianBlur stdDeviation="5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <!-- Arrow marker (highway) -->
+        <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#ffd700" opacity="0.8"/>
+        </marker>
+        <!-- Arrow marker (national road) -->
+        <marker id="arrow-gd" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#66bb6a" opacity="0.85"/>
+        </marker>
+        <!-- Mountain pattern for background -->
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.025)" stroke-width="0.5"/>
+        </pattern>
+      </defs>
+
+      <!-- Background -->
+      <rect width="900" height="600" fill="#0a0e1a"/>
+      <rect width="900" height="600" fill="url(#grid)"/>
+      <!-- Subtle radial glow center -->
+      <radialGradient id="centerGlow" cx="50%" cy="50%" r="60%">
+        <stop offset="0%" stop-color="#1a2540" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#0a0e1a" stop-opacity="0"/>
+      </radialGradient>
+      <rect width="900" height="600" fill="url(#centerGlow)"/>
+
+      <!-- ── Province outlines (simplified decorative) ── -->
+      <!-- Central China rough outline decoration -->
+      <g opacity="0.06" stroke="#4a7fb5" stroke-width="1" fill="none">
+        <ellipse cx="450" cy="300" rx="380" ry="250"/>
+        <ellipse cx="450" cy="300" rx="300" ry="180"/>
+      </g>
+
+      <!-- ── Mountain decorative icons (background) ── -->
+      <g opacity="0.07" fill="#ffd700">
+        <!-- Small mountain symbols -->
+        <polygon points="130,150 150,120 170,150" />
+        <polygon points="150,150 175,108 200,150" />
+        <polygon points="700,200 720,170 740,200" />
+        <polygon points="720,200 750,155 780,200" />
+        <polygon points="200,450 220,420 240,450" />
+        <polygon points="680,480 700,455 720,480" />
+      </g>
+
+      <!-- ═══════════════════════════════════ -->
+      <!-- ROUTE LINES (drawn first, under nodes) -->
+      <!-- ═══════════════════════════════════ -->
+
+      <!-- Shadow lines (thicker, darker) -->
+      <g stroke="rgba(255,140,0,0.15)" stroke-width="5" fill="none" stroke-linecap="round">
+        <line x1="530" y1="490" x2="350" y2="400"/>  <!-- 武汉→十堰 -->
+        <line x1="350" y1="400" x2="420" y2="340"/>  <!-- 十堰→洛阳 -->
+        <line x1="420" y1="340" x2="240" y2="305"/>  <!-- 洛阳→西安 -->
+        <line x1="240" y1="305" x2="400" y2="210"/>  <!-- 西安→平遥 -->
+        <line x1="400" y1="210" x2="430" y2="128"/>  <!-- 平遥→大同 -->
+        <line x1="430" y1="128" x2="615" y2="215"/>  <!-- 大同→济南 -->
+        <line x1="615" y1="215" x2="640" y2="300"/>  <!-- 济南→泰安 -->
+        <line x1="640" y1="300" x2="660" y2="370"/>  <!-- 泰安→曲阜 -->
+        <line x1="660" y1="370" x2="510" y2="365"/>  <!-- 曲阜→开封 -->
+        <line x1="510" y1="365" x2="530" y2="490"/>  <!-- 开封→武汉 -->
+      </g>
+      <!-- Main route lines -->
+      <g stroke="#ffd700" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"
+         stroke-dasharray="6,3" filter="url(#glow)">
+        <line x1="530" y1="490" x2="350" y2="400" marker-end="url(#arrow)"/>
+        <line x1="350" y1="400" x2="420" y2="340" marker-end="url(#arrow)"/>
+        <line x1="420" y1="340" x2="240" y2="305" marker-end="url(#arrow)"/>
+        <line x1="240" y1="305" x2="400" y2="210" marker-end="url(#arrow)"/>
+        <line x1="400" y1="210" x2="430" y2="128" marker-end="url(#arrow)"/>
+        <line x1="430" y1="128" x2="615" y2="215" marker-end="url(#arrow)"/>
+        <line x1="615" y1="215" x2="640" y2="300" marker-end="url(#arrow)"/>
+        <line x1="640" y1="300" x2="660" y2="370" marker-end="url(#arrow)"/>
+        <line x1="660" y1="370" x2="510" y2="365" marker-end="url(#arrow)"/>
+        <line x1="510" y1="365" x2="530" y2="490" marker-end="url(#arrow)"/>
+      </g>
+
+      <!-- Distance labels on routes (highway) -->
+      <g font-size="10" fill="#6a5040" text-anchor="middle" font-family="sans-serif">
+        <text x="430" y="458">380km·4h</text>
+        <text x="372" y="362">430km·4.5h</text>
+        <text x="315" y="312">350km·3.5h</text>
+        <text x="305" y="248">370km·4h</text>
+        <text x="408" y="160">280km·3h</text>
+        <text x="540" y="162">580km·6h</text>
+        <text x="645" y="252">80km·1h</text>
+        <text x="665" y="335">80km·1h</text>
+        <text x="585" y="358">430km·4.5h</text>
+        <text x="510" y="445">430km·4.5h</text>
+      </g>
+
+      <!-- ═══════════════════════════════════ -->
+      <!-- NATIONAL ROAD ALTERNATIVES (国道)   -->
+      <!-- Offset ~9px left-perpendicular from highways -->
+      <!-- ═══════════════════════════════════ -->
+
+      <!-- National road shadow lines -->
+      <g stroke="rgba(76,175,80,0.12)" stroke-width="5" fill="none" stroke-linecap="round">
+        <line x1="534" y1="482" x2="354" y2="392"/>  <!-- 武汉→十堰 G316+G209 -->
+        <line x1="356" y1="407" x2="426" y2="347"/>  <!-- 十堰→洛阳 G209+G207 -->
+        <line x1="422" y1="331" x2="242" y2="296"/>  <!-- 洛阳→西安 G310+G312 -->
+        <line x1="245" y1="313" x2="405" y2="218"/>  <!-- 西安→平遥 G108 -->
+        <line x1="409" y1="213" x2="439" y2="131"/>  <!-- 平遥→大同 G108 -->
+        <line x1="426" y1="136" x2="611" y2="223"/>  <!-- 大同→济南 G208+高速 -->
+        <line x1="606" y1="218" x2="631" y2="303"/>  <!-- 济南→泰安 G104 -->
+        <line x1="631" y1="303" x2="651" y2="373"/>  <!-- 泰安→曲阜 G104 -->
+        <line x1="660" y1="361" x2="510" y2="356"/>  <!-- 曲阜→开封 G327+G220 -->
+        <line x1="501" y1="366" x2="521" y2="491"/>  <!-- 开封→武汉 G107 -->
+      </g>
+      <!-- National road lines -->
+      <g stroke="#66bb6a" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.65"
+         stroke-dasharray="3,5">
+        <line x1="534" y1="482" x2="354" y2="392" marker-end="url(#arrow-gd)"/>
+        <line x1="356" y1="407" x2="426" y2="347" marker-end="url(#arrow-gd)"/>
+        <line x1="422" y1="331" x2="242" y2="296" marker-end="url(#arrow-gd)"/>
+        <line x1="245" y1="313" x2="405" y2="218" marker-end="url(#arrow-gd)"/>
+        <line x1="409" y1="213" x2="439" y2="131" marker-end="url(#arrow-gd)"/>
+        <line x1="426" y1="136" x2="611" y2="223" marker-end="url(#arrow-gd)"/>
+        <line x1="606" y1="218" x2="631" y2="303" marker-end="url(#arrow-gd)"/>
+        <line x1="631" y1="303" x2="651" y2="373" marker-end="url(#arrow-gd)"/>
+        <line x1="660" y1="361" x2="510" y2="356" marker-end="url(#arrow-gd)"/>
+        <line x1="501" y1="366" x2="521" y2="491" marker-end="url(#arrow-gd)"/>
+      </g>
+
+      <!-- National road number labels (at midpoints of offset lines) -->
+      <g font-size="8.5" fill="#4caf50" text-anchor="middle" font-family="sans-serif" opacity="0.8">
+        <text x="444" y="434">G316/G209</text>
+        <text x="394" y="373">G209/G207</text>
+        <text x="336" y="310">G310/G312</text>
+        <text x="330" y="262">G108</text>
+        <text x="430" y="170">G108</text>
+        <text x="522" y="177">G208</text>
+        <text x="618" y="261">G104</text>
+        <text x="640" y="339">G104</text>
+        <text x="586" y="353">G327/G220</text>
+        <text x="509" y="432">G107</text>
+      </g>
+
+      <!-- Key national road waypoints (notable detour stops) -->
+      <g font-family="sans-serif">
+        <!-- 随州·曾侯乙 on G316 (武汉→十堰 ~38%) -->
+        <circle cx="471" cy="451" r="4" fill="#4caf50" opacity="0.7" stroke="rgba(0,20,0,0.6)" stroke-width="0.8"/>
+        <text x="487" y="450" font-size="7.5" fill="#4caf50" opacity="0.85">随州·编钟</text>
+
+        <!-- 栾川 on G207 (十堰→洛阳 ~65%) -->
+        <circle cx="396" cy="361" r="4" fill="#4caf50" opacity="0.7" stroke="rgba(0,20,0,0.6)" stroke-width="0.8"/>
+        <text x="387" y="355" font-size="7.5" fill="#4caf50" opacity="0.85">栾川</text>
+
+        <!-- 韩城·司马迁祠 on G108 (西安→平遥 ~35%) -->
+        <circle cx="300" cy="279" r="4" fill="#4caf50" opacity="0.7" stroke="rgba(0,20,0,0.6)" stroke-width="0.8"/>
+        <text x="312" y="278" font-size="7.5" fill="#4caf50" opacity="0.85">韩城·史记</text>
+
+        <!-- 华阴 on G312 (洛阳→西安 ~82%, near Xi'an approach) -->
+        <circle cx="269" cy="299" r="4" fill="#4caf50" opacity="0.7" stroke="rgba(0,20,0,0.6)" stroke-width="0.8"/>
+        <text x="258" y="293" font-size="7.5" fill="#4caf50" opacity="0.85">华阴</text>
+
+        <!-- 单县·羊汤 on G327 (曲阜→开封 ~45%) -->
+        <circle cx="593" cy="359" r="4" fill="#4caf50" opacity="0.7" stroke="rgba(0,20,0,0.6)" stroke-width="0.8"/>
+        <text x="595" y="353" font-size="7.5" fill="#4caf50" opacity="0.85">单县·羊汤</text>
+      </g>
+
+      <!-- ═══════════════════════════════════ -->
+      <!-- CITY NODES -->
+      <!-- ═══════════════════════════════════ -->
+
+      <!-- Helper macro: each city is drawn manually -->
+
+      <!-- ① 武汉 (START/END) cx=530 cy=490 -->
+      <g data-tip="wuhan">
+        <g filter="url(#glow-strong)">
+          <circle cx="530" cy="490" r="26" fill="rgba(105,240,174,0.15)" stroke="#69f0ae" stroke-width="2"/>
+          <circle cx="530" cy="490" r="13" fill="#69f0ae"/>
+          <!-- Pulse ring -->
+          <circle cx="530" cy="490" r="32" fill="none" stroke="#69f0ae" stroke-width="1" opacity="0.4"/>
+          <circle cx="530" cy="490" r="40" fill="none" stroke="#69f0ae" stroke-width="0.5" opacity="0.2"/>
+        </g>
+        <text x="530" y="523" text-anchor="middle" font-size="13" fill="#69f0ae" font-weight="bold" font-family="sans-serif">武汉</text>
+        <text x="530" y="536" text-anchor="middle" font-size="9" fill="#4a8a6a" font-family="sans-serif">出发 / 终点</text>
+      </g>
+
+      <!-- ② 十堰·武当山 cx=350 cy=400 BONUS -->
+      <g data-tip="shiyan">
+        <g filter="url(#glow)">
+          <circle cx="350" cy="400" r="20" fill="rgba(206,147,216,0.15)" stroke="#ce93d8" stroke-width="1.5"/>
+          <circle cx="350" cy="400" r="10" fill="#ce93d8"/>
+        </g>
+        <text x="350" y="430" text-anchor="middle" font-size="12" fill="#ce93d8" font-weight="bold" font-family="sans-serif">十堰</text>
+        <text x="350" y="443" text-anchor="middle" font-size="9" fill="#8a5a9a" font-family="sans-serif">武当山 ⚔️ Bonus</text>
+        <text x="350" y="455" text-anchor="middle" font-size="8.5" fill="#6a4a7a" font-family="sans-serif">Day 1-2</text>
+      </g>
+
+      <!-- ③ 洛阳·嵩山 cx=420 cy=340 MOUNTAIN -->
+      <g data-tip="luoyang">
+        <g filter="url(#glow-strong)">
+          <circle cx="420" cy="340" r="26" fill="rgba(255,215,0,0.15)" stroke="#ffd700" stroke-width="2"/>
+          <circle cx="420" cy="340" r="13" fill="#ffd700"/>
+          <!-- Crystal indicator -->
+          <polygon points="420,323 428,337 420,351 412,337" fill="rgba(255,215,0,0.3)" stroke="#ffd700" stroke-width="1"/>
+        </g>
+        <text x="455" y="335" text-anchor="middle" font-size="13" fill="#ffd700" font-weight="bold" font-family="sans-serif">洛阳</text>
+        <text x="455" y="348" text-anchor="middle" font-size="9" fill="#a07a00" font-family="sans-serif">中岳嵩山 🏔️</text>
+        <text x="455" y="360" text-anchor="middle" font-size="8.5" fill="#7a5a00" font-family="sans-serif">Day 3-8 · 黄龙晶</text>
+      </g>
+
+      <!-- ④ 西安·华山 cx=240 cy=305 MOUNTAIN -->
+      <g data-tip="xian">
+        <g filter="url(#glow-strong)">
+          <circle cx="240" cy="305" r="26" fill="rgba(255,215,0,0.15)" stroke="#ffd700" stroke-width="2"/>
+          <circle cx="240" cy="305" r="13" fill="#ffd700"/>
+          <polygon points="240,288 248,302 240,316 232,302" fill="rgba(255,215,0,0.3)" stroke="#ffd700" stroke-width="1"/>
+        </g>
+        <text x="190" y="295" text-anchor="middle" font-size="13" fill="#ffd700" font-weight="bold" font-family="sans-serif">西安</text>
+        <text x="190" y="308" text-anchor="middle" font-size="9" fill="#a07a00" font-family="sans-serif">西岳华山 🏔️</text>
+        <text x="190" y="320" text-anchor="middle" font-size="8.5" fill="#7a5a00" font-family="sans-serif">Day 9-14 · 白虎晶</text>
+      </g>
+
+      <!-- ⑤ 平遥 cx=400 cy=210 CULTURE -->
+      <g data-tip="pingyao">
+        <g filter="url(#glow)">
+          <circle cx="400" cy="210" r="20" fill="rgba(79,195,247,0.15)" stroke="#4fc3f7" stroke-width="1.5"/>
+          <circle cx="400" cy="210" r="10" fill="#4fc3f7"/>
+        </g>
+        <text x="440" y="206" text-anchor="middle" font-size="12" fill="#4fc3f7" font-weight="bold" font-family="sans-serif">平遥</text>
+        <text x="445" y="219" text-anchor="middle" font-size="9" fill="#2a7a9a" font-family="sans-serif">🏯 晋商古城</text>
+        <text x="440" y="231" text-anchor="middle" font-size="8.5" fill="#1a5a7a" font-family="sans-serif">Day 15-16</text>
+      </g>
+
+      <!-- ⑥ 大同·恒山 cx=430 cy=128 MOUNTAIN -->
+      <g data-tip="datong">
+        <g filter="url(#glow-strong)">
+          <circle cx="430" cy="128" r="26" fill="rgba(255,215,0,0.15)" stroke="#ffd700" stroke-width="2"/>
+          <circle cx="430" cy="128" r="13" fill="#ffd700"/>
+          <polygon points="430,111 438,125 430,139 422,125" fill="rgba(255,215,0,0.3)" stroke="#ffd700" stroke-width="1"/>
+        </g>
+        <text x="470" y="122" text-anchor="middle" font-size="13" fill="#ffd700" font-weight="bold" font-family="sans-serif">大同</text>
+        <text x="470" y="135" text-anchor="middle" font-size="9" fill="#a07a00" font-family="sans-serif">北岳恒山 🏔️</text>
+        <text x="470" y="147" text-anchor="middle" font-size="8.5" fill="#7a5a00" font-family="sans-serif">Day 17-20 · 玄武晶</text>
+      </g>
+
+      <!-- ⑦ 济南 cx=615 cy=215 CULTURE -->
+      <g data-tip="jinan">
+        <g filter="url(#glow)">
+          <circle cx="615" cy="215" r="20" fill="rgba(79,195,247,0.15)" stroke="#4fc3f7" stroke-width="1.5"/>
+          <circle cx="615" cy="215" r="10" fill="#4fc3f7"/>
+        </g>
+        <text x="655" y="210" text-anchor="middle" font-size="12" fill="#4fc3f7" font-weight="bold" font-family="sans-serif">济南</text>
+        <text x="658" y="223" text-anchor="middle" font-size="9" fill="#2a7a9a" font-family="sans-serif">💧 趵突泉</text>
+        <text x="652" y="235" text-anchor="middle" font-size="8.5" fill="#1a5a7a" font-family="sans-serif">Day 21-22</text>
+      </g>
+
+      <!-- ⑧ 泰安·泰山 cx=640 cy=300 MOUNTAIN -->
+      <g data-tip="taian">
+        <g filter="url(#glow-strong)">
+          <circle cx="640" cy="300" r="26" fill="rgba(255,215,0,0.15)" stroke="#ffd700" stroke-width="2"/>
+          <circle cx="640" cy="300" r="13" fill="#ffd700"/>
+          <polygon points="640,283 648,297 640,311 632,297" fill="rgba(255,215,0,0.3)" stroke="#ffd700" stroke-width="1"/>
+        </g>
+        <text x="685" y="293" text-anchor="middle" font-size="13" fill="#ffd700" font-weight="bold" font-family="sans-serif">泰安</text>
+        <text x="685" y="306" text-anchor="middle" font-size="9" fill="#a07a00" font-family="sans-serif">东岳泰山 🏔️ ⭐</text>
+        <text x="685" y="318" text-anchor="middle" font-size="8.5" fill="#7a5a00" font-family="sans-serif">Day 23-25 · 青龙晶</text>
+      </g>
+
+      <!-- ⑨ 曲阜 cx=660 cy=370 CULTURE -->
+      <g data-tip="qufu">
+        <g filter="url(#glow)">
+          <circle cx="660" cy="370" r="20" fill="rgba(79,195,247,0.15)" stroke="#4fc3f7" stroke-width="1.5"/>
+          <circle cx="660" cy="370" r="10" fill="#4fc3f7"/>
+        </g>
+        <text x="705" y="368" text-anchor="middle" font-size="12" fill="#4fc3f7" font-weight="bold" font-family="sans-serif">曲阜</text>
+        <text x="706" y="381" text-anchor="middle" font-size="9" fill="#2a7a9a" font-family="sans-serif">📚 孔庙孔林</text>
+        <text x="702" y="393" text-anchor="middle" font-size="8.5" fill="#1a5a7a" font-family="sans-serif">Day 26-27</text>
+      </g>
+
+      <!-- ⑩ 开封 cx=510 cy=365 CULTURE -->
+      <g data-tip="kaifeng">
+        <g filter="url(#glow)">
+          <circle cx="510" cy="365" r="20" fill="rgba(79,195,247,0.15)" stroke="#4fc3f7" stroke-width="1.5"/>
+          <circle cx="510" cy="365" r="10" fill="#4fc3f7"/>
+        </g>
+        <text x="510" y="393" text-anchor="middle" font-size="12" fill="#4fc3f7" font-weight="bold" font-family="sans-serif">开封</text>
+        <text x="510" y="406" text-anchor="middle" font-size="9" fill="#2a7a9a" font-family="sans-serif">🍜 宋都风情</text>
+        <text x="510" y="418" text-anchor="middle" font-size="8.5" fill="#1a5a7a" font-family="sans-serif">Day 28-29</text>
+      </g>
+
+      <!-- ═══════════════════════════════════ -->
+      <!-- FREE ATTRACTION MARKERS -->
+      <!-- ═══════════════════════════════════ -->
+      <g fill="#81c784" stroke="rgba(12,30,16,0.8)" stroke-width="1.2">
+        <circle cx="444" cy="326" r="6" data-tip="free_luoyang_1"/>
+        <circle cx="446" cy="348" r="6" data-tip="free_luoyang_2"/>
+        <circle cx="263" cy="294" r="6" data-tip="free_xian_1"/>
+        <circle cx="265" cy="316" r="6" data-tip="free_xian_2"/>
+        <circle cx="378" cy="202" r="6" data-tip="free_pingyao_1"/>
+        <circle cx="408" cy="120" r="6" data-tip="free_datong_1"/>
+        <circle cx="408" cy="136" r="6" data-tip="free_datong_2"/>
+        <circle cx="592" cy="207" r="6" data-tip="free_jinan_1"/>
+        <circle cx="592" cy="223" r="6" data-tip="free_jinan_2"/>
+        <circle cx="617" cy="292" r="6" data-tip="free_taian_1"/>
+        <circle cx="637" cy="362" r="6" data-tip="free_qufu_1"/>
+        <circle cx="533" cy="356" r="6" data-tip="free_kaifeng_1"/>
+        <circle cx="535" cy="372" r="6" data-tip="free_kaifeng_2"/>
+      </g>
+
+      <!-- ═══════════════════════════════════ -->
+      <!-- CAMPING MARKERS                     -->
+      <!-- ═══════════════════════════════════ -->
+      <g font-family="sans-serif">
+
+        <!-- 🏕️ 第一营: 伊河·洛阳 (Day 5) — near Luoyang node -->
+        <g data-tip="camp_ihe">
+          <circle cx="395" cy="362" r="13" fill="rgba(38,198,218,0.15)" stroke="#26c6da" stroke-width="1.5" data-tip="camp_ihe"/>
+          <text x="395" y="366" text-anchor="middle" font-size="9" fill="#26c6da">⛺</text>
+          <text x="375" y="378" text-anchor="middle" font-size="8" fill="#26c6da" opacity="0.9">伊河 D5</text>
+        </g>
+
+        <!-- 🏕️ 第二营: 黄河·灵宝 (Day 8) — between Luoyang & Xi'an, ~55% -->
+        <g data-tip="camp_yellow">
+          <circle cx="322" cy="322" r="13" fill="rgba(38,198,218,0.15)" stroke="#26c6da" stroke-width="1.5" data-tip="camp_yellow"/>
+          <text x="322" y="326" text-anchor="middle" font-size="9" fill="#26c6da">⛺</text>
+          <text x="300" y="338" text-anchor="middle" font-size="8" fill="#26c6da" opacity="0.9">黄河 D8</text>
+        </g>
+
+        <!-- 🏕️ 第三营: 汾河·介休 (Day 14) — between Xi'an & Pingyao, ~88% -->
+        <g data-tip="camp_fen">
+          <circle cx="381" cy="222" r="13" fill="rgba(38,198,218,0.15)" stroke="#26c6da" stroke-width="1.5" data-tip="camp_fen"/>
+          <text x="381" y="226" text-anchor="middle" font-size="9" fill="#26c6da">⛺</text>
+          <text x="363" y="238" text-anchor="middle" font-size="8" fill="#26c6da" opacity="0.9">汾河 D14</text>
+        </g>
+
+        <!-- 🏕️ 第四营: 鸡公山·信阳 (Day 29) — between Kaifeng & Wuhan, ~57% -->
+        <g data-tip="camp_jishan">
+          <circle cx="521" cy="436" r="13" fill="rgba(38,198,218,0.15)" stroke="#26c6da" stroke-width="1.5" data-tip="camp_jishan"/>
+          <text x="521" y="440" text-anchor="middle" font-size="9" fill="#26c6da">⛺</text>
+          <text x="545" y="452" text-anchor="middle" font-size="8" fill="#26c6da" opacity="0.9">鸡公山 D29</text>
+        </g>
+
+        <!-- 🌄 泰山山顶特殊住宿 (Day 24) — on泰安 node -->
+        <text x="720" y="285" text-anchor="middle" font-size="9" fill="#fff176" opacity="0.85">🌄 山顶</text>
+
+        <!-- ⭐ 5星西安 -->
+        <text x="185" y="285" text-anchor="middle" font-size="9" fill="#fff176" opacity="0.85">⭐5星</text>
+      </g>
+
+      <!-- ── Title in map ── -->
+      <text x="80" y="55" font-size="18" fill="rgba(255,215,0,0.6)" font-weight="bold"
+            font-family="sans-serif" letter-spacing="3">🐉 气运之旅路线</text>
+
+      <!-- ── Compass rose ── -->
+      <g transform="translate(820,530)" opacity="0.5">
+        <circle r="18" fill="none" stroke="#4a6a8a" stroke-width="1"/>
+        <text y="-22" text-anchor="middle" font-size="9" fill="#4a6a8a" font-family="sans-serif">北</text>
+        <text y="30" text-anchor="middle" font-size="9" fill="#4a6a8a" font-family="sans-serif">南</text>
+        <text x="-26" y="4" text-anchor="middle" font-size="9" fill="#4a6a8a" font-family="sans-serif">西</text>
+        <text x="26" y="4" text-anchor="middle" font-size="9" fill="#4a6a8a" font-family="sans-serif">东</text>
+        <line y1="-14" y2="14" stroke="#4a6a8a" stroke-width="1"/>
+        <line x1="-14" x2="14" stroke="#4a6a8a" stroke-width="1"/>
+        <polygon points="0,-14 3,-4 0,0 -3,-4" fill="#ffd700" opacity="0.7"/>
+      </g>
+
+      <!-- ── Step numbers on route ── -->
+      <g font-size="9" fill="rgba(255,215,0,0.5)" text-anchor="middle" font-family="sans-serif" font-weight="bold">
+        <circle cx="530" cy="490" r="0"/>
+        <!-- Step circles at midpoints -->
+        <circle cx="440" cy="447" r="8" fill="rgba(0,0,0,0.5)" stroke="rgba(255,215,0,0.3)" stroke-width="0.5"/>
+        <text x="440" y="450">①</text>
+        <circle cx="385" cy="372" r="8" fill="rgba(0,0,0,0.5)" stroke="rgba(255,215,0,0.3)" stroke-width="0.5"/>
+        <text x="385" y="375">②</text>
+        <circle cx="328" cy="320" r="8" fill="rgba(0,0,0,0.5)" stroke="rgba(255,215,0,0.3)" stroke-width="0.5"/>
+        <text x="328" y="323">③</text>
+        <circle cx="318" cy="254" r="8" fill="rgba(0,0,0,0.5)" stroke="rgba(255,215,0,0.3)" stroke-width="0.5"/>
+        <text x="318" y="257">④</text>
+        <circle cx="413" cy="166" r="8" fill="rgba(0,0,0,0.5)" stroke="rgba(255,215,0,0.3)" stroke-width="0.5"/>
+        <text x="413" y="169">⑤</text>
+        <circle cx="530" cy="168" r="8" fill="rgba(0,0,0,0.5)" stroke="rgba(255,215,0,0.3)" stroke-width="0.5"/>
+        <text x="530" y="171">⑥</text>
+        <circle cx="630" cy="255" r="8" fill="rgba(0,0,0,0.5)" stroke="rgba(255,215,0,0.3)" stroke-width="0.5"/>
+        <text x="630" y="258">⑦</text>
+        <circle cx="652" cy="333" r="8" fill="rgba(0,0,0,0.5)" stroke="rgba(255,215,0,0.3)" stroke-width="0.5"/>
+        <text x="652" y="336">⑧</text>
+        <circle cx="585" cy="368" r="8" fill="rgba(0,0,0,0.5)" stroke="rgba(255,215,0,0.3)" stroke-width="0.5"/>
+        <text x="585" y="371">⑨</text>
+        <circle cx="520" cy="430" r="8" fill="rgba(0,0,0,0.5)" stroke="rgba(255,215,0,0.3)" stroke-width="0.5"/>
+        <text x="520" y="433">⑩</text>
+      </g>
+
+    </svg>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#69f0ae;box-shadow:0 0 6px #69f0ae;"></div>
+      出发/终点（武汉）
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#ffd700;box-shadow:0 0 6px #ffd700;"></div>
+      五岳·寻晶（登山）
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#4fc3f7;"></div>
+      文化城市（放松）
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#ce93d8;"></div>
+      Bonus关卡
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#81c784;"></div>
+      🆓 免费景点
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#26c6da;border:1.5px solid #26c6da;"></div>
+      🏕️ 露营营地（4夜）
+    </div>
+    <div class="legend-item">
+      <div class="legend-dot" style="background:#fff176;border:1.5px solid #fff176;"></div>
+      ⭐/🌄 特殊住宿
+    </div>
+    <div class="legend-item">
+      <svg width="20" height="12" style="margin-top:1px">
+        <line x1="0" y1="6" x2="20" y2="6" stroke="#ffd700" stroke-width="1.5" stroke-dasharray="4,2"/>
+      </svg>
+      高速路线（顺序）
+    </div>
+    <div class="legend-item">
+      <svg width="20" height="12" style="margin-top:1px">
+        <line x1="0" y1="6" x2="20" y2="6" stroke="#66bb6a" stroke-width="1.5" stroke-dasharray="3,4"/>
+      </svg>
+      国道备选（风景）
+    </div>
+    <div class="legend-item">
+      <svg width="20" height="12" style="margin-top:1px">
+        <circle cx="5" cy="6" r="4" fill="#4caf50" opacity="0.8"/>
+      </svg>
+      国道沿途亮点
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="stats-bar">
+  <div class="stat-box">
+    <div class="stat-number">30</div>
+    <div class="stat-label">旅行天数</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-number">3500<span style="font-size:1rem">km</span></div>
+    <div class="stat-label">总里程</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-number">4</div>
+    <div class="stat-label">五岳登顶（+衡山）</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-number">9</div>
+    <div class="stat-label">目的地城市</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-number">5</div>
+    <div class="stat-label">龙晶收集</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-number">4</div>
+    <div class="stat-label">🏕️ 露营夜</div>
+  </div>
+  <div class="stat-box">
+    <div class="stat-number">1</div>
+    <div class="stat-label">Web游戏上线</div>
+  </div>
+</div>
+
+<!-- Crystals -->
+<div class="crystal-section">
+  <h2>💎 龙晶收集进度</h2>
+  <div class="crystals">
+    <div class="crystal-card done">
+      <div class="crystal-icon">🔴</div>
+      <div class="crystal-name" style="color:#ff6b6b">南方朱雀晶</div>
+      <div class="crystal-mountain">南岳衡山（已完成）</div>
+      <span class="crystal-skill" style="background:rgba(255,107,107,0.15);color:#ff6b6b">火焰跳跃</span>
+      <div class="crystal-status status-done">✅ 已获得</div>
+    </div>
+    <div class="crystal-card">
+      <div class="crystal-icon">🟡</div>
+      <div class="crystal-name" style="color:#ffd700">中央黄龙晶</div>
+      <div class="crystal-mountain">中岳嵩山 · 洛阳</div>
+      <span class="crystal-skill" style="background:rgba(255,215,0,0.15);color:#ffd700">大地震击</span>
+      <div class="crystal-status status-todo">Day 6 · 待获取</div>
+    </div>
+    <div class="crystal-card">
+      <div class="crystal-icon">⚪</div>
+      <div class="crystal-name" style="color:#e0e0e0">西方白虎晶</div>
+      <div class="crystal-mountain">西岳华山 · 西安</div>
+      <span class="crystal-skill" style="background:rgba(224,224,224,0.1);color:#e0e0e0">风刃冲刺</span>
+      <div class="crystal-status status-todo">Day 12 · 待获取</div>
+    </div>
+    <div class="crystal-card">
+      <div class="crystal-icon">🔵</div>
+      <div class="crystal-name" style="color:#4fc3f7">北方玄武晶</div>
+      <div class="crystal-mountain">北岳恒山 · 大同</div>
+      <span class="crystal-skill" style="background:rgba(79,195,247,0.15);color:#4fc3f7">铁壁护盾</span>
+      <div class="crystal-status status-todo">Day 19 · 待获取</div>
+    </div>
+    <div class="crystal-card">
+      <div class="crystal-icon">🟢</div>
+      <div class="crystal-name" style="color:#69f0ae">东方青龙晶</div>
+      <div class="crystal-mountain">东岳泰山 · 泰安</div>
+      <span class="crystal-skill" style="background:rgba(105,240,174,0.15);color:#69f0ae">雷霆天降</span>
+      <div class="crystal-status status-todo">Day 24 · 待获取</div>
+    </div>
+  </div>
+</div>
+
+<!-- Stop Cards -->
+<div class="stops-section">
+  <h2>📍 各站详情</h2>
+  <div class="stops-grid">
+
+    <div class="stop-card start">
+      <div class="card-header">
+        <div class="stop-number">0</div>
+        <div>
+          <div class="card-title">武汉 🏠</div>
+          <div class="card-subtitle">出发地 · 终点站</div>
+        </div>
+      </div>
+      <div class="card-tags">
+        <span class="tag culture-tag">出发地</span>
+        <span class="tag food-tag">热干面</span>
+        <span class="tag dev-tag">游戏筹备</span>
+      </div>
+    </div>
+
+    <div class="stop-card bonus">
+      <div class="card-header">
+        <div class="stop-number">1</div>
+        <div>
+          <div class="card-title">十堰 · 武当山 ⚔️</div>
+          <div class="card-subtitle">道教圣地 · Bonus关卡</div>
+        </div>
+      </div>
+      <div class="card-days">Day 1-2</div>
+      <div class="card-tags">
+        <span class="tag bonus-tag">武当金顶</span>
+        <span class="tag bonus-tag">南岩宫</span>
+        <span class="tag food-tag">道家素面</span>
+      </div>
+      <div class="drive-info">🚗 380km · 4h（武汉出发）</div>
+    </div>
+
+    <div class="stop-card mountain">
+      <div class="card-header">
+        <div class="stop-number">2</div>
+        <div>
+          <div class="card-title">洛阳 · 中岳嵩山 🏔️</div>
+          <div class="card-subtitle">中原文化 · 黄龙晶</div>
+        </div>
+      </div>
+      <div class="card-days">Day 3-8</div>
+      <div class="card-tags">
+        <span class="tag mountain-tag">峻极峰 1512m</span>
+        <span class="tag crystal-tag">🟡 黄龙晶</span>
+        <span class="tag culture-tag">龙门石窟</span>
+        <span class="tag culture-tag">少林寺</span>
+        <span class="tag food-tag">水席</span>
+        <span class="tag dev-tag">Copilot开发</span>
+        <span class="tag camp-tag">🏕️ Day5伊河</span>
+        <span class="tag camp-tag">🌊 Day8黄河</span>
+      </div>
+      <div class="drive-info">🚗 430km · 4.5h（十堰出发）</div>
+    </div>
+
+    <div class="stop-card mountain">
+      <div class="card-header">
+        <div class="stop-number">3</div>
+        <div>
+          <div class="card-title">西安 · 西岳华山 🏔️</div>
+          <div class="card-subtitle">关中古都 · 白虎晶</div>
+        </div>
+      </div>
+      <div class="card-days">Day 9-14</div>
+      <div class="card-tags">
+        <span class="tag mountain-tag">南峰 2154m ★最高</span>
+        <span class="tag crystal-tag">⚪ 白虎晶</span>
+        <span class="tag culture-tag">兵马俑</span>
+        <span class="tag culture-tag">古城墙</span>
+        <span class="tag food-tag">肉夹馍</span>
+        <span class="tag dev-tag">Midjourney</span>
+        <span class="tag star-tag">⭐ 唯一5星夜</span>
+        <span class="tag camp-tag">🏕️ Day14汾河</span>
+      </div>
+      <div class="drive-info">🚗 350km · 3.5h（洛阳/灵宝出发）</div>
+    </div>
+
+    <div class="stop-card culture">
+      <div class="card-header">
+        <div class="stop-number">4</div>
+        <div>
+          <div class="card-title">平遥古城 🏯</div>
+          <div class="card-subtitle">晋商文化 · 放松驿站</div>
+        </div>
+      </div>
+      <div class="card-days">Day 15-16</div>
+      <div class="card-tags">
+        <span class="tag culture-tag">UNESCO</span>
+        <span class="tag culture-tag">明清古城</span>
+        <span class="tag food-tag">平遥牛肉</span>
+        <span class="tag culture-tag">日升昌票号</span>
+      </div>
+      <div class="drive-info">🚗 370km · 4h（西安出发）</div>
+    </div>
+
+    <div class="stop-card mountain">
+      <div class="card-header">
+        <div class="stop-number">5</div>
+        <div>
+          <div class="card-title">大同 · 北岳恒山 🏔️</div>
+          <div class="card-subtitle">晋北文化 · 玄武晶</div>
+        </div>
+      </div>
+      <div class="card-days">Day 17-20</div>
+      <div class="card-tags">
+        <span class="tag mountain-tag">天峰岭 2016m</span>
+        <span class="tag crystal-tag">🔵 玄武晶</span>
+        <span class="tag culture-tag">悬空寺</span>
+        <span class="tag culture-tag">云冈石窟</span>
+        <span class="tag food-tag">刀削面</span>
+        <span class="tag dev-tag">Midjourney</span>
+      </div>
+      <div class="drive-info">🚗 280km · 3h（平遥出发）</div>
+    </div>
+
+    <div class="stop-card culture">
+      <div class="card-header">
+        <div class="stop-number">6</div>
+        <div>
+          <div class="card-title">济南 💧</div>
+          <div class="card-subtitle">齐鲁文化 · 天下第一泉</div>
+        </div>
+      </div>
+      <div class="card-days">Day 21-22</div>
+      <div class="card-tags">
+        <span class="tag culture-tag">趵突泉</span>
+        <span class="tag culture-tag">大明湖</span>
+        <span class="tag food-tag">把子肉</span>
+      </div>
+      <div class="drive-info">🚗 580km · 6h（大同出发，早出发）</div>
+    </div>
+
+    <div class="stop-card mountain">
+      <div class="card-header">
+        <div class="stop-number">7</div>
+        <div>
+          <div class="card-title">泰安 · 东岳泰山 🏔️ ⭐</div>
+          <div class="card-subtitle">五岳之首 · 青龙晶</div>
+        </div>
+      </div>
+      <div class="card-days">Day 23-25</div>
+      <div class="card-tags">
+        <span class="tag mountain-tag">玉皇顶 1545m</span>
+        <span class="tag crystal-tag">🟢 青龙晶</span>
+        <span class="tag culture-tag">🌅 泰山日出</span>
+        <span class="tag culture-tag">封禅之地</span>
+        <span class="tag food-tag">泰安豆腐宴</span>
+        <span class="tag dev-tag">Suno BGM</span>
+        <span class="tag star-tag">🌄 山顶住宿</span>
+      </div>
+      <div class="drive-info">🚗 80km · 1h（济南出发）</div>
+    </div>
+
+    <div class="stop-card culture">
+      <div class="card-header">
+        <div class="stop-number">8</div>
+        <div>
+          <div class="card-title">曲阜 📚</div>
+          <div class="card-subtitle">儒家圣地 · 文化洗礼</div>
+        </div>
+      </div>
+      <div class="card-days">Day 26-27</div>
+      <div class="card-tags">
+        <span class="tag culture-tag">孔庙孔林孔府</span>
+        <span class="tag culture-tag">古柏参天</span>
+        <span class="tag dev-tag">Suno / 泰山关卡</span>
+      </div>
+      <div class="drive-info">🚗 80km · 1h（泰安出发）</div>
+    </div>
+
+    <div class="stop-card culture">
+      <div class="card-header">
+        <div class="stop-number">9</div>
+        <div>
+          <div class="card-title">开封 🍜</div>
+          <div class="card-subtitle">宋都风情 · 旅程收尾</div>
+        </div>
+      </div>
+      <div class="card-days">Day 28-29</div>
+      <div class="card-tags">
+        <span class="tag culture-tag">清明上河园</span>
+        <span class="tag culture-tag">开封府</span>
+        <span class="tag food-tag">灌汤包</span>
+        <span class="tag dev-tag">Cursor 游戏收尾</span>
+        <span class="tag camp-tag">🏕️ Day29鸡公山</span>
+      </div>
+      <div class="drive-info">🚗 430km · 4.5h（曲阜出发）</div>
+    </div>
+
+    <div class="stop-card start">
+      <div class="card-header">
+        <div class="stop-number">🏆</div>
+        <div>
+          <div class="card-title">武汉 · 回家</div>
+          <div class="card-subtitle">气运归来 · 游戏上线</div>
+        </div>
+      </div>
+      <div class="card-days">Day 30</div>
+      <div class="card-tags">
+        <span class="tag crystal-tag">五晶集齐</span>
+        <span class="tag dev-tag">GitHub Pages 发布</span>
+        <span class="tag food-tag">热干面庆祝</span>
+      </div>
+      <div class="drive-info">🚗 150km · 2h（信阳出发）</div>
+    </div>
+
+  </div>
+</div>
+
+<footer>🐉 小北寻龙记 · 2026暑假五岳气运之旅 · 爸爸 + 小北 · 愿气运归来</footer>
+
+<div id="tt"></div>
+<script>
+const TIPS = {
+  "wuhan": {
+    "title": "🏠 武汉",
+    "days": "出发 Day 1 | 返回 Day 30",
+    "paid": [],
+    "free": [
+      "户部巷（美食）",
+      "黄鹤楼外观",
+      "江滩公园"
+    ],
+    "note": "旅程起点与终点，回家吃热干面庆祝！"
+  },
+  "shiyan": {
+    "title": "⚔️ 武当山·十堰",
+    "days": "Day 1-2 · Bonus关卡",
+    "paid": [
+      "武当山联票 210元（含金顶索道）"
+    ],
+    "free": [
+      "玄岳门明代石牌坊",
+      "丹江口水库观景台",
+      "神农溪河道"
+    ],
+    "note": "道教圣地，游戏Bonus关卡"
+  },
+  "luoyang": {
+    "title": "🏔️ 洛阳·中岳嵩山",
+    "days": "Day 3-8 · 🟡黄龙晶",
+    "paid": [
+      "龙门石窟 90元（需提前购票）",
+      "少林寺 100元（含功夫表演）",
+      "嵩山登山 50元"
+    ],
+    "free": [
+      "洛邑古城步行区",
+      "洛浦公园（洛河两岸绿道）",
+      "洛阳老城区",
+      "牡丹广场"
+    ],
+    "camp": "🏕️ Day 5：伊河露营（龙门石窟旁）\\n🌊 Day 8：黄河露营（灵宝，途中）",
+    "note": "爬山前夜住室内；Day8下午出发灵宝黄河露营，次日2h到西安"
+  },
+  "xian": {
+    "title": "🏔️ 西安·西岳华山",
+    "days": "Day 9-14 · ⚪白虎晶",
+    "paid": [
+      "华山 180元+索道140元+长空栈道60元",
+      "兵马俑 120元（需提前购票）",
+      "华清宫 150元",
+      "陕博珍宝馆 30元（免费但需预约）"
+    ],
+    "free": [
+      "大唐不夜城（免费步行街）",
+      "曲江池遗址公园",
+      "城墙外护城河骑行道",
+      "大雁塔北广场"
+    ],
+    "camp": "⭐ 唯一5星夜（西安城区某晚）\\n🏕️ Day14：汾河露营（介休，途中前往平遥）",
+    "note": "华山难度最高★★★★☆；唯一5星住西安城区；爬山前夜住室内"
+  },
+  "pingyao": {
+    "title": "🏯 平遥古城",
+    "days": "Day 15-16 · 晋商文化",
+    "paid": [
+      "古城通票 135元（城墙+日升昌+县衙）"
+    ],
+    "free": [
+      "古城南大街漫步",
+      "平遥夜景（极美，免费）",
+      "护城河步道"
+    ],
+    "note": "住城墙内明清客栈；从汾河营地出发40分钟即到"
+  },
+  "datong": {
+    "title": "🏔️ 大同·北岳恒山",
+    "days": "Day 17-20 · 🔵玄武晶",
+    "paid": [
+      "云冈石窟 120元（需提前购票）",
+      "悬空寺 133元（需提前预约！限40人/批）",
+      "恒山 55元"
+    ],
+    "free": [
+      "大同古城墙外围",
+      "代王府广场",
+      "文瀛湖公园",
+      "古城南城墙夜景"
+    ],
+    "note": "悬空寺提前5-7天预约！恒山+悬空寺同天游览"
+  },
+  "jinan": {
+    "title": "💧 济南",
+    "days": "Day 21-22 · 齐鲁文化",
+    "paid": [
+      "趵突泉 40元"
+    ],
+    "free": [
+      "大明湖（完全免费）",
+      "芙蓉街老字号小吃",
+      "黑虎泉（护城河边）",
+      "泉城广场"
+    ],
+    "note": "大明湖夏日荷花盛开，划船特别美"
+  },
+  "taian": {
+    "title": "🏔️ 泰安·东岳泰山",
+    "days": "Day 23-25 · 🟢青龙晶 ⭐五岳之首",
+    "paid": [
+      "泰山门票 115元（需提前购票）",
+      "索道下山 100元（腿废了一定要坐）",
+      "山顶宾馆 400-800元/晚（提前1个月订！）"
+    ],
+    "free": [
+      "岱庙外围（汉代古建）",
+      "泰安老街",
+      "登山沿途历代石刻碑文"
+    ],
+    "camp": "🌄 Day 24夜：山顶住宿（看日出）\\n下午2点出发登山，傍晚到顶",
+    "note": "泰山日出是人生体验；“登泰山而小天下”；封禅圣地"
+  },
+  "qufu": {
+    "title": "📚 曲阜",
+    "days": "Day 26-27 · 儒家圣地",
+    "paid": [
+      "三孔联票（孔庙+孔林+孔府）150元"
+    ],
+    "free": [
+      "明故城街道漫步",
+      "颜庙外观",
+      "尼山外围登山"
+    ],
+    "note": "孔林非常安静，古柏参天，推荐下午去"
+  },
+  "kaifeng": {
+    "title": "🍜 开封",
+    "days": "Day 28-29 · 宋都风情",
+    "paid": [
+      "清明上河园 100元",
+      "开封府 70元",
+      "铁塔公园 30元"
+    ],
+    "free": [
+      "宋都御街（免费步行街）",
+      "鼓楼夜市（灌汤包！）",
+      "龙亭湖边步道"
+    ],
+    "camp": "🏕️ Day29：傍晚出发→信阳鸡公山露营（最后一营）",
+    "note": "游戏最终冲刺在此完成，发布GitHub Pages！"
+  },
+  "camp_ihe": {
+    "title": "🏕️ 第一营：伊河",
+    "days": "Day 5 夜",
+    "desc": "龙门石窟东侧，伊河沿岸河滩\\n夜看石窟灯光倒映水中，极美",
+    "ritual": "仪式：写下“启程信封”，装入各自心愿",
+    "note": "高德搜索：龙门石窟伊河露营 / 洛阳龙门露营基地"
+  },
+  "camp_yellow": {
+    "title": "🌊 第二营：黄河·灵宝",
+    "days": "Day 8 夜（洛阳→西安途中）",
+    "desc": "河南灵宝，函谷关附近黄河南岸\\n中华母亲河，涛声入眠",
+    "ritual": "仪式：站在黄河边大声说出一句话",
+    "note": "高德搜索：灵宝黄河湿地露营 | 次日2h到西安"
+  },
+  "camp_fen": {
+    "title": "🏔️ 第三营：汾河·介休",
+    "days": "Day 14 夜（西安→平遥途中）",
+    "desc": "山西介休/灵石，汾河沿岸\\n山西母亲河，晋中田野，星空无遮",
+    "ritual": "仪式：游戏美术创作夜",
+    "note": "高德搜索：介休汾河露营 | 次日40min到平遥古城"
+  },
+  "camp_jishan": {
+    "title": "🌿 第四营：鸡公山·信阳",
+    "days": "Day 29 夜（返程途中）",
+    "desc": "华中林海，大别山余脉\\n最后一营，萤火虫季节",
+    "ritual": "仪式：打开第一营写下的信封，旅途闭环！",
+    "note": "高德搜索：信阳鸡公山露营 | 次日2h到武汉"
+  },
+  "free_luoyang_1": {
+    "title": "🆓 洛邑古城",
+    "days": "洛阳·免费",
+    "desc": "仿汉唐风格古城街区，外围步行区免费，烟火气十足"
+  },
+  "free_luoyang_2": {
+    "title": "🆓 洛浦公园",
+    "days": "洛阳·免费",
+    "desc": "沿洛河绵延十几公里绿道，散步骑行免费"
+  },
+  "free_xian_1": {
+    "title": "🆓 大唐不夜城",
+    "days": "西安·免费",
+    "desc": "唐朝主题步行街，不倒翁小姐姐，全部免费"
+  },
+  "free_xian_2": {
+    "title": "🆓 曲江池遗址公园",
+    "days": "西安·免费",
+    "desc": "唐代皇家园林遗址，全免费，湖边散步绝佳"
+  },
+  "free_pingyao_1": {
+    "title": "🆓 平遥古城夜景",
+    "days": "平遥·免费",
+    "desc": "古城夜晚灯光极美，护城河倒影，漫步古城"
+  },
+  "free_datong_1": {
+    "title": "🆓 文瀛湖公园",
+    "days": "大同·免费",
+    "desc": "大同城市公园，湖边散步，休闲放松"
+  },
+  "free_datong_2": {
+    "title": "🆓 大同古城墙外围",
+    "days": "大同·免费",
+    "desc": "完整明代城墙外围漫步免费，夜景极美"
+  },
+  "free_jinan_1": {
+    "title": "🆓 大明湖",
+    "days": "济南·完全免费",
+    "desc": "公园完全免费，夏日荷花盛开，湖边散步、租船"
+  },
+  "free_jinan_2": {
+    "title": "🆓 芙蓉街",
+    "days": "济南·免费",
+    "desc": "老字号小吃街，逛街免费，糖醋鲤鱼、把子肉"
+  },
+  "free_taian_1": {
+    "title": "🆓 岱庙外围",
+    "days": "泰安·免费",
+    "desc": "汉代古建筑群外围免费参观，感受泰山脚下历史气息"
+  },
+  "free_qufu_1": {
+    "title": "🆓 明故城街道",
+    "days": "曲阜·免费",
+    "desc": "曲阜古城步行街，感受孔孟之乡的市井生活"
+  },
+  "free_kaifeng_1": {
+    "title": "🆓 宋都御街",
+    "days": "开封·免费",
+    "desc": "仿宋步行街，灌汤包就在这里，完全免费逛"
+  },
+  "free_kaifeng_2": {
+    "title": "🆓 鼓楼夜市",
+    "days": "开封·免费",
+    "desc": "开封最热闹的夜市，花样小吃，灌汤包、羊肉炒饼"
+  }
+};
+
+const tt = document.getElementById('tt');
+const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (char) => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+}[char]));
+const toLines = (value) => {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return String(value).split('\\n').map((item) => item.trim()).filter(Boolean);
+};
+const renderList = (items, className) => toLines(items)
+  .map((item) => `<div class="${className}">${escapeHtml(item)}</div>`)
+  .join('');
+const renderSection = (label, items, className) => {
+  const body = renderList(items, className);
+  return body ? `<div class="tt-section"><div class="tt-label">${label}</div>${body}</div>` : '';
+};
+const renderTextBlock = (label, text, className = 'tt-desc') => {
+  const body = renderList(text, className);
+  return body ? `<div class="tt-section"><div class="tt-label">${label}</div>${body}</div>` : '';
+};
+
+function renderTip(key) {
+  const tip = TIPS[key];
+  if (!tip) return '';
+  return `
+    <div class="tt-title">${escapeHtml(tip.title || '')}</div>
+    ${tip.days ? `<div class="tt-days">${escapeHtml(tip.days)}</div>` : ''}
+    ${tip.desc ? renderTextBlock('简介', tip.desc) : ''}
+    ${renderSection('付费景点', tip.paid, 'tt-item')}
+    ${renderSection('免费景点', tip.free, 'tt-free')}
+    ${tip.camp ? renderSection('露营安排', tip.camp, 'tt-camp') : ''}
+    ${tip.ritual ? renderTextBlock('仪式', tip.ritual, 'tt-item') : ''}
+    ${tip.note ? `<div class="tt-note">${escapeHtml(tip.note)}</div>` : ''}
+  `;
+}
+
+function positionTip(event) {
+  const offset = 18;
+  const rect = tt.getBoundingClientRect();
+  let left = event.clientX + offset;
+  let top = event.clientY + offset;
+  if (left + rect.width > window.innerWidth - 12) left = event.clientX - rect.width - offset;
+  if (top + rect.height > window.innerHeight - 12) top = event.clientY - rect.height - offset;
+  tt.style.left = `${Math.max(12, left)}px`;
+  tt.style.top = `${Math.max(12, top)}px`;
+}
+
+function showTip(event) {
+  const key = event.currentTarget.dataset.tip;
+  const html = renderTip(key);
+  if (!html) return;
+  tt.innerHTML = html;
+  tt.style.display = 'block';
+  positionTip(event);
+}
+
+function moveTip(event) {
+  if (tt.style.display === 'block') positionTip(event);
+}
+
+function hideTip() {
+  tt.style.display = 'none';
+}
+
+document.querySelectorAll('svg [data-tip]').forEach((el) => {
+  el.addEventListener('mouseenter', showTip);
+  el.addEventListener('mousemove', moveTip);
+  el.addEventListener('mouseleave', hideTip);
+});
+</script>
+</body>
+</html>
