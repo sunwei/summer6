@@ -40,4 +40,5 @@ export const ITEMS = {
   FOOD_LOTUS: 'food_lotus',
   SKILL_TAIJI: 'skill_taiji',
   SKILL_YIJINJING: 'skill_yijinjing',
+  TAIJI_SWORD: 'taiji_sword',
 };

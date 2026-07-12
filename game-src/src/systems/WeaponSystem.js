@@ -41,22 +41,26 @@ const DEFS = {
   // ─────────────── 朱雀晶片烈焰（Z键，AOE爆炸）───────────────
   ZHUQUE: {
     baseDamage: 30,
-    baseRange: 75,         // AOE blast radius in px (halved from 150)
-    baseCooldownMs: 3000,
+    baseRange: 75,         // AOE blast radius in px
+    baseCooldownMs: 4000,  // 固定4秒冷却（故事系统规定）
     rangePerWisdom: 0.75,  // range grows to 150px max at full wisdom
     rangeMax: 150,
-    cooldownMsPerWisdom: -12,  // negative → wisdom shortens cooldown
-    cooldownMsMin: 1000,
+    cooldownMsPerWisdom: 0,   // 冷却时间固定，不随智慧变化
+    cooldownMsMin: 4000,
   },
 
-  // ──────────────── 太极守护（K键，格挡护盾）────────────────
-  TAIJI_GUARD: {
-    baseRadius: 28,         // guard ring radius in px
-    baseDurationMs: 700,    // parry window length in ms
-    radiusPerWisdom: 0.4,
+  // ──────────── 玄武护体（X键，衡山气运碎片护盾）────────────
+  // 替代原太极护体；从南岳衡山获得，持续2秒，冷却4秒
+  XUANWU_GUARD: {
+    baseRadius: 34,
+    baseDurationMs: 2000,   // 持续2秒（固定）
+    baseCooldownMs: 4000,   // 冷却4秒（固定）
+    radiusPerWisdom: 0.3,
     radiusMax: 60,
-    durationMsPerWisdom: 8,
-    durationMsMax: 1500,
+    durationMsPerWisdom: 0,  // 持续时间固定
+    durationMsMax: 2000,
+    cooldownMsPerWisdom: 0,  // 冷却时间固定
+    cooldownMsMin: 4000,
   },
 
   // ────── 易筋经爆发（少林寺关卡解锁后，预留接口）──────────

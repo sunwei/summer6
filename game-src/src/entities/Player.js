@@ -32,8 +32,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.state = PLAYER_STATES.IDLE;
     this.nextAttackTime = 0;
     this.invulnerableUntil = 0;
-    this.taijiGuardUntil = 0;
-    this.taijiCooldownUntil = 0;
+    this.shieldActiveUntil = 0;    // 玄武护体激活结束时间
+    this.shieldCooldownUntil = 0;  // 玄武护体冷却结束时间
     this.lastTrailTime = 0;
     this.skillCooldown = 0;
     this.guardRing = null;
@@ -73,7 +73,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       jump: Phaser.Input.Keyboard.KeyCodes.SPACE,
       attack: Phaser.Input.Keyboard.KeyCodes.J,
       skill_zhuque: Phaser.Input.Keyboard.KeyCodes.Z,
-      skill_taiji: Phaser.Input.Keyboard.KeyCodes.K,
+      skill_xuanwu: Phaser.Input.Keyboard.KeyCodes.X,   // 玄武护体（替代原K键太极护体）
       interact: Phaser.Input.Keyboard.KeyCodes.F,
       interactAlt: Phaser.Input.Keyboard.KeyCodes.E,
       backpack: Phaser.Input.Keyboard.KeyCodes.B,
@@ -82,12 +82,13 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   syncSkills(inventoryState) {
     this.skills[ITEMS.CRYSTAL_ZHUQUE] = !!inventoryState[ITEMS.CRYSTAL_ZHUQUE];
+    this.skills[ITEMS.CRYSTAL_XUANWU] = !!inventoryState[ITEMS.CRYSTAL_XUANWU];
     this.skills[ITEMS.SKILL_TAIJI] = !!inventoryState[ITEMS.SKILL_TAIJI];
     this.skills[ITEMS.SKILL_YIJINJING] = !!inventoryState[ITEMS.SKILL_YIJINJING];
   }
 
   isGuarding() {
-    return this.scene.time.now < this.taijiGuardUntil;
+    return this.scene.time.now < this.shieldActiveUntil;
   }
 
   update() {
@@ -117,9 +118,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.activateCrystalSkill('zhuque');
     }
 
-    // K key — 太极护体 (taiji guard skill)
-    if (this.skills[ITEMS.SKILL_TAIJI] && Phaser.Input.Keyboard.JustDown(this.keys.skill_taiji)) {
-      this.useActiveSkill();
+    // X key — 玄武护体 (xuanwu shield, from Hengshan crystal)
+    if (this.skills[ITEMS.CRYSTAL_XUANWU] && Phaser.Input.Keyboard.JustDown(this.keys.skill_xuanwu)) {
+      this.useXuanwuShield();
     }
 
     if (!this.isAttacking) {
@@ -262,17 +263,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
-  useActiveSkill() {
-    if (!this.skills[ITEMS.SKILL_TAIJI]) return;
-    if (this.scene.time.now < this.taijiCooldownUntil) return;
+  useXuanwuShield() {
+    if (!this.skills[ITEMS.CRYSTAL_XUANWU]) return;
+    if (this.scene.time.now < this.shieldCooldownUntil) return;
 
-    // Guard radius and duration both grow with wisdom
-    const gs = weaponSystem.calc(WEAPONS.TAIJI_GUARD, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus });
-    this.taijiGuardUntil = this.scene.time.now + gs.durationMs;
-    // Cool down for guard duration + brief gap so overlay drains clean
-    const cdMs = gs.durationMs + 400;
-    this.taijiCooldownUntil = this.scene.time.now + cdMs;
-    bus.emit(EVENTS.SKILL_COOLDOWN, { itemKey: ITEMS.SKILL_TAIJI, duration: cdMs });
+    // Guard radius and duration — fixed by story system (2s duration, 4s cooldown)
+    const gs = weaponSystem.calc(WEAPONS.XUANWU_GUARD, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus });
+    this.shieldActiveUntil = this.scene.time.now + gs.durationMs;
+    const cdMs = gs.cooldownMs;
+    this.shieldCooldownUntil = this.scene.time.now + cdMs;
+    bus.emit(EVENTS.SKILL_COOLDOWN, { itemKey: ITEMS.CRYSTAL_XUANWU, duration: cdMs });
     sfx.play('taiji_guard');
     this.showGuardRing(gs.radius, gs.durationMs);
   }
@@ -306,23 +306,23 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     container.setDepth(this.depth + 1);
     this.guardRing = container;
 
-    // ── Three-layer golden bell dome ──────────────────────────────────────
-    // Outer shell: golden rim
-    const outerRing = scene.add.circle(0, 0, radius, 0xffd700, 0.10);
-    outerRing.setStrokeStyle(3, 0xffd700, 1.0);
+    // ── Three-layer xuanwu tortoise-shell dome (dark teal) ───────────────
+    // Outer shell: dark teal rim
+    const outerRing = scene.add.circle(0, 0, radius, 0x26c6da, 0.10);
+    outerRing.setStrokeStyle(3, 0x00e5ff, 1.0);
 
-    // Middle layer: softer warm glow
-    const midRing = scene.add.circle(0, 0, Math.round(radius * 0.72), 0xffee44, 0.08);
-    midRing.setStrokeStyle(1.5, 0xffdd00, 0.70);
+    // Middle layer: softer teal glow
+    const midRing = scene.add.circle(0, 0, Math.round(radius * 0.72), 0x4dd0e1, 0.08);
+    midRing.setStrokeStyle(1.5, 0x26c6da, 0.70);
 
-    // Inner core: white shimmer (energy centre)
-    const innerGlow = scene.add.circle(0, 0, Math.round(radius * 0.44), 0xffffff, 0.20);
+    // Inner core: white-blue shimmer (energy centre)
+    const innerGlow = scene.add.circle(0, 0, Math.round(radius * 0.44), 0xb2ebf2, 0.20);
 
     container.add([innerGlow, midRing, outerRing]);
 
-    // ── Activation burst (world-space ripple) ─────────────────────────────
-    const burst = scene.add.circle(this.x, this.y - 6, radius * 0.35, 0xffd700, 0.55);
-    burst.setStrokeStyle(2, 0xffffff, 1.0);
+    // ── Activation burst (world-space ripple, teal) ──────────────────────
+    const burst = scene.add.circle(this.x, this.y - 6, radius * 0.35, 0x26c6da, 0.55);
+    burst.setStrokeStyle(2, 0xb2ebf2, 1.0);
     burst.setDepth(this.depth + 2);
     scene.tweens.add({
       targets: burst,
@@ -436,7 +436,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   flashGuardSuccess() {
     sfx.play('guard_block');
-    const flash = this.scene.add.circle(this.x, this.y - 4, 20, 0xffffff, 0.35).setStrokeStyle(2, 0xffd700, 1);
+    const flash = this.scene.add.circle(this.x, this.y - 4, 20, 0xb2ebf2, 0.35).setStrokeStyle(2, 0x00e5ff, 1);
 
     this.scene.tweens.add({
       targets: flash,

@@ -106,7 +106,10 @@ export class HUDScene extends Phaser.Scene {
 
       if (itemKey === ITEMS.SKILL_TAIJI) {
         this.hotbar.flashSlot(6);
-        this.showBanner('✨ 太极拳 已解锁！');
+        this.showBanner('✨ 太极八卦拳 已解锁！');
+      }
+      if (itemKey === ITEMS.TAIJI_SWORD) {
+        this.showBanner('⚔️ 太极八卦剑 已获得！');
       }
     };
 

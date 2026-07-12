@@ -16,13 +16,13 @@ const SLOT_ITEMS = [
 
 // Keyboard key shown in the bottom-right corner of each slot
 const SLOT_KEY_LABELS = {
-  [ITEMS.CRYSTAL_ZHUQUE]:   'Z',
+  [ITEMS.CRYSTAL_ZHUQUE]:    'Z',
   [ITEMS.CRYSTAL_HUANGLONG]: '',
-  [ITEMS.CRYSTAL_BAIHU]:    '',
-  [ITEMS.CRYSTAL_XUANWU]:   '',
-  [ITEMS.CRYSTAL_QINGLONG]: '',
-  [ITEMS.SKILL_TAIJI]:      'K',
-  [ITEMS.SKILL_YIJINJING]:  '',
+  [ITEMS.CRYSTAL_BAIHU]:     '',
+  [ITEMS.CRYSTAL_XUANWU]:    'X',  // 玄武护体（X键激活）
+  [ITEMS.CRYSTAL_QINGLONG]:  '',
+  [ITEMS.SKILL_TAIJI]:       '',   // 随J键自动触发八卦弹，无独立热键
+  [ITEMS.SKILL_YIJINJING]:   '',
 };
 
 const ITEM_TEXTURES = {

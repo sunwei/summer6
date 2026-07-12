@@ -8,10 +8,11 @@ export class SkillSystem {
       [ITEMS.CRYSTAL_ZHUQUE]: true,
       [ITEMS.CRYSTAL_HUANGLONG]: false,
       [ITEMS.CRYSTAL_BAIHU]: false,
-      [ITEMS.CRYSTAL_XUANWU]: false,
+      [ITEMS.CRYSTAL_XUANWU]: true,   // 已从南岳衡山获得玄武护体
       [ITEMS.CRYSTAL_QINGLONG]: false,
       [ITEMS.SKILL_TAIJI]: false,
       [ITEMS.SKILL_YIJINJING]: false,
+      [ITEMS.TAIJI_SWORD]: false,
     };
   }
 
