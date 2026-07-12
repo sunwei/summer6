@@ -48,8 +48,10 @@ export class WudangScene extends Phaser.Scene {
     this.levelFinished = false;
     this.bossDefeated = false;
     this.bossEncounterShown = false;
+    this.bossHPBarVisible = false;   // 血条仅在遭遇后显示
     this.boss = null;
     this.bossLabel = null;
+    this.bossArenaWall = null;       // 竞技场左侧封路墙
     this._musicTheme = 'wudang';
 
     if (this.scene.isActive(SCENES.HUD)) {
@@ -418,7 +420,7 @@ export class WudangScene extends Phaser.Scene {
   }
 
   // ──────────────────────────────────────────────────────────
-  //  守金将军 BOSS
+  //  守金将军 BOSS（三阶段强化版）
   // ──────────────────────────────────────────────────────────
 
   createBoss() {
@@ -429,9 +431,15 @@ export class WudangScene extends Phaser.Scene {
     boss.patrolMinX = 4120;
     boss.patrolMaxX = 4760;
     boss.patrolDirection = -1;
-    boss.hp = 80;
+    boss.maxHp = 200;
+    boss.hp = 200;
     boss.isBoss = true;
+    boss.phase = 1;               // 当前阶段（1/2/3）
+    boss.contactDamage = 20;      // 接触伤害（随阶段上升）
     boss.patrolSpeed = 70;
+    boss.lastChargeTime = 0;      // 上次冲锋时间
+    boss.lastProjectileTime = 0;  // 上次发弹时间
+    boss.isCharging = false;      // 是否正在冲锋
     boss.setVelocityX(-70);
     this.boss = boss;
 
@@ -441,6 +449,239 @@ export class WudangScene extends Phaser.Scene {
       stroke: '#000000',
       strokeThickness: 4,
     }).setOrigin(0.5).setDepth(200);
+
+    this.createBossHPBar();   // 创建时隐藏，遭遇后再淡入
+
+    // 竞技场左侧封路墙（禁用状态，遭遇BOSS时激活）
+    this.bossArenaWall = this.physics.add.staticImage(4088, 260, 'tile_platform');
+    this.bossArenaWall.setVisible(false);
+    this.bossArenaWall.body.setSize(20, 600);
+    this.bossArenaWall.body.enable = false;
+    this.physics.add.collider(this.player, this.bossArenaWall);
+  }
+
+  // BOSS 血条（固定于摄像机顶部中央，默认隐藏）
+  createBossHPBar() {
+    const cx = GAME_WIDTH / 2;
+    const barW = 280;
+    const barY = 56;
+
+    this.bossHPBG = this.add
+      .rectangle(cx, barY, barW + 6, 22, 0x000000, 0.78)
+      .setScrollFactor(0).setDepth(955)
+      .setStrokeStyle(2, 0xff8844, 1)
+      .setVisible(false).setAlpha(0);
+
+    this.bossHPFill = this.add
+      .rectangle(cx - barW / 2, barY, barW, 14, 0xff4400, 1)
+      .setScrollFactor(0).setDepth(956).setOrigin(0, 0.5)
+      .setVisible(false).setAlpha(0);
+
+    this.bossHPName = this.add
+      .text(cx, barY - 15, '👑 守金将军  第一阶段', {
+        fontSize: '13px', color: '#ff8844',
+        stroke: '#000000', strokeThickness: 3,
+      })
+      .setOrigin(0.5).setScrollFactor(0).setDepth(957)
+      .setVisible(false).setAlpha(0);
+
+    this.bossHPPercent = this.add
+      .text(cx + barW / 2 + 6, barY, '100%', {
+        fontSize: '11px', color: '#ffffff',
+        stroke: '#000000', strokeThickness: 2,
+      })
+      .setOrigin(0, 0.5).setScrollFactor(0).setDepth(957)
+      .setVisible(false).setAlpha(0);
+  }
+
+  // 遭遇 BOSS 后淡入显示血条
+  showBossHPBar() {
+    if (this.bossHPBarVisible) return;
+    this.bossHPBarVisible = true;
+    [this.bossHPBG, this.bossHPFill, this.bossHPName, this.bossHPPercent].forEach((el) => {
+      if (!el) return;
+      el.setVisible(true);
+      this.tweens.add({ targets: el, alpha: 1, duration: 450 });
+    });
+  }
+
+  // 激活竞技场左侧封路墙，阻止玩家退出金顶
+  lockBossArena() {
+    if (this.bossArenaWall) {
+      this.bossArenaWall.body.enable = true;
+      this.bossArenaWall.refreshBody();
+    }
+    // 金色光柱特效标示封路位置
+    const flash = this.add.rectangle(4090, 160, 16, 320, 0xffd700, 0.82).setDepth(300);
+    this.tweens.add({
+      targets: flash, alpha: 0, scaleY: 1.6,
+      duration: 700, onComplete: () => flash.destroy(),
+    });
+    const msg = this.add.text(4230, 96, '⚠️ 退路已封！决战开始！', {
+      fontSize: '16px', color: '#ffd700',
+      stroke: '#000000', strokeThickness: 3,
+      backgroundColor: '#00000099', padding: { x: 6, y: 3 },
+    }).setOrigin(0.5).setDepth(305);
+    this.tweens.add({
+      targets: msg, alpha: 0, y: msg.y - 28,
+      duration: 1400, delay: 200, onComplete: () => msg.destroy(),
+    });
+  }
+
+  updateBossHPBar() {
+    if (!this.boss || !this.boss.active || !this.bossHPFill) return;
+    const barW = 280;
+    const ratio = Math.max(0, this.boss.hp / this.boss.maxHp);
+    this.bossHPFill.width = barW * ratio;
+    if (this.bossHPPercent) {
+      this.bossHPPercent.setText(Math.ceil(ratio * 100) + '%');
+    }
+    const phaseColors = { 1: 0xff4400, 2: 0xff6600, 3: 0xff0000 };
+    this.bossHPFill.setFillStyle(phaseColors[this.boss.phase] || 0xff4400, 1);
+  }
+
+  destroyBossHPBar() {
+    [this.bossHPBG, this.bossHPFill, this.bossHPName, this.bossHPPercent].forEach((el) => {
+      if (el) el.destroy();
+    });
+    this.bossHPBG = null;
+    this.bossHPFill = null;
+    this.bossHPName = null;
+    this.bossHPPercent = null;
+  }
+
+  // BOSS 掉落后原地复活（保留血量与阶段）
+  respawnBoss() {
+    const boss = this.boss;
+    if (!boss || !boss.active) return;
+    boss.setPosition(4400, 100);
+    boss.setVelocity(0, 0);
+    boss.isCharging = false;
+    boss.patrolDirection = -1;
+    boss.setVelocityX(-boss.patrolSpeed);
+    // 重新应用当前阶段的颜色
+    if (boss.phase === 3) boss.setTint(0xff0000);
+    else if (boss.phase === 2) boss.setTint(0xff8844);
+    else boss.clearTint();
+  }
+
+  // ── 阶段切换逻辑 ───────────────────────────────────────────
+
+  updateBossPhase() {
+    const boss = this.boss;
+    if (!boss || !boss.active) return;
+
+    const hpRatio = boss.hp / boss.maxHp;
+    const newPhase = hpRatio > 0.6 ? 1 : hpRatio > 0.3 ? 2 : 3;
+
+    if (newPhase !== boss.phase) {
+      boss.phase = newPhase;
+      this.onBossPhaseChange(boss, newPhase);
+    }
+
+    const now = this.time.now;
+
+    // 第二阶段起启用冲锋
+    if (boss.phase >= 2 && !boss.isCharging) {
+      const chargeInterval = boss.phase === 3 ? 2000 : 3200;
+      if (now - boss.lastChargeTime > chargeInterval) {
+        boss.lastChargeTime = now;
+        this.bossCharge(boss);
+      }
+    }
+
+    // 第三阶段增加弹幕攻击
+    if (boss.phase === 3) {
+      if (now - boss.lastProjectileTime > 2400) {
+        boss.lastProjectileTime = now;
+        this.bossShootProjectile(boss);
+      }
+    }
+  }
+
+  onBossPhaseChange(boss, newPhase) {
+    if (newPhase === 2) {
+      boss.patrolSpeed = 110;
+      boss.contactDamage = 28;
+      boss.setTint(0xff8844);
+      if (this.bossHPName) {
+        this.bossHPName.setText('👑 守金将军  ⚡ 第二阶段').setStyle({ color: '#ff8844' });
+      }
+      if (this.bossHPBG) this.bossHPBG.setStrokeStyle(2, 0xff6600, 1);
+      this.showLevelBanner('⚡ 守金将军·怒气觉醒！攻击加强！');
+      this.burstParticles(boss.x, boss.y, 20, 0xff8844);
+      this.cameras.main.shake(320, 0.008);
+      this.cameras.main.flash(180, 255, 110, 0, true);
+    } else if (newPhase === 3) {
+      boss.patrolSpeed = 150;
+      boss.contactDamage = 40;
+      boss.setTint(0xff0000);
+      if (this.bossHPName) {
+        this.bossHPName.setText('👑 守金将军  💀 第三阶段').setStyle({ color: '#ff4444' });
+      }
+      if (this.bossHPBG) this.bossHPBG.setStrokeStyle(2, 0xff0000, 1);
+      this.showLevelBanner('💀 守金将军·狂暴之怒！极度危险！');
+      this.burstParticles(boss.x, boss.y, 30, 0xff0000);
+      this.cameras.main.shake(520, 0.016);
+      this.cameras.main.flash(300, 255, 0, 0, true);
+    }
+  }
+
+  // BOSS 冲锋（第二阶段起）
+  bossCharge(boss) {
+    if (!boss || !boss.active || !this.player) return;
+    boss.isCharging = true;
+    const dir = this.player.x > boss.x ? 1 : -1;
+    const chargeSpeed = boss.phase === 3 ? 340 : 240;
+    boss.setVelocityX(dir * chargeSpeed);
+    boss.setFlipX(dir < 0);
+
+    const warn = this.add.text(boss.x, boss.y - 62, '⚔️ 冲击！', {
+      fontSize: '18px', color: '#ff2200',
+      stroke: '#000000', strokeThickness: 3, fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(205);
+    this.tweens.add({
+      targets: warn, alpha: 0, y: warn.y - 22,
+      duration: 520, onComplete: () => warn.destroy(),
+    });
+
+    this.time.delayedCall(620, () => {
+      if (boss && boss.active) boss.isCharging = false;
+    });
+  }
+
+  // BOSS 弹幕（第三阶段）
+  bossShootProjectile(boss) {
+    if (!boss || !boss.active || !this.player) return;
+    const angle = Phaser.Math.Angle.Between(boss.x, boss.y, this.player.x, this.player.y);
+    const speed = 290;
+    const proj = this.physics.add.image(boss.x, boss.y - 12, 'bagua_orb');
+    proj.setTint(0xff1100);
+    proj.setScale(0.9);
+    proj.body.setAllowGravity(false);
+    proj.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+    this.tweens.add({ targets: proj, angle: 360, duration: 480, repeat: -1 });
+
+    // 弹幕落地时的光晕
+    const glow = this.add.circle(boss.x, boss.y - 12, 10, 0xff2200, 0.35).setDepth(48);
+    this.tweens.add({ targets: glow, alpha: { from: 0.2, to: 0.6 }, scale: { from: 0.8, to: 1.4 }, duration: 300, yoyo: true, repeat: -1 });
+
+    this.physics.add.overlap(this.player, proj, () => {
+      if (!proj.active) return;
+      this.burstParticles(proj.x, proj.y, 10, 0xff2200);
+      glow.destroy();
+      proj.destroy();
+      if (this.player.isGuarding()) {
+        this.player.flashGuardSuccess();
+      } else {
+        this.player.hurt(25, boss.x);
+      }
+    });
+
+    this.time.delayedCall(3200, () => {
+      if (proj && proj.active) proj.destroy();
+      if (glow && glow.active) glow.destroy();
+    });
   }
 
   // ──────────────────────────────────────────────────────────
@@ -612,13 +853,18 @@ export class WudangScene extends Phaser.Scene {
   // ──────────────────────────────────────────────────────────
 
   onBossDefeated(boss) {
-    this.burstParticles(boss.x, boss.y, 26, 0xffd700);
-    this.burstParticles(boss.x, boss.y, 14, 0xff8844);
+    this.burstParticles(boss.x, boss.y, 30, 0xffd700);
+    this.burstParticles(boss.x, boss.y, 18, 0xff8844);
+    this.burstParticles(boss.x, boss.y, 12, 0xff0000);
+    this.cameras.main.shake(400, 0.012);
     boss.destroy();
     this.bossDefeated = true;
     this.boss = null;
 
     if (this.bossLabel) { this.bossLabel.destroy(); this.bossLabel = null; }
+    this.destroyBossHPBar();
+    // 解锁竞技场，允许玩家走向宝剑和传送门
+    if (this.bossArenaWall) this.bossArenaWall.body.enable = false;
 
     this.showLevelBanner('⚔️ 守金将军已败！');
     this.time.delayedCall(1200, () => this.spawnSwordPickup());
@@ -670,13 +916,15 @@ export class WudangScene extends Phaser.Scene {
     if (!enemy.active || this.levelFinished) return;
 
     if (player.isGuarding()) {
+      // 玄武护体可打断BOSS冲锋
+      if (enemy.isBoss && enemy.isCharging) enemy.isCharging = false;
       enemy.patrolDirection *= -1;
       enemy.setVelocityX(enemy.patrolDirection * 100);
       this.burstParticles(enemy.x, enemy.y, 8, 0x4de8ff); // 玄武护体弹开色
       return;
     }
 
-    const damage = enemy.isBoss ? 20 : 10;
+    const damage = enemy.contactDamage || (enemy.isBoss ? 20 : 10);
     player.hurt(damage, enemy.x);
   }
 
@@ -716,6 +964,7 @@ export class WudangScene extends Phaser.Scene {
     if (enemy.hp > 0) {
       sfx.play('enemy_hit');
       this.burstParticles(enemy.x, enemy.y, 6, enemy.isBoss ? 0xff8844 : 0xffd27a);
+      if (enemy.isBoss) this.updateBossHPBar();
       return;
     }
 
@@ -832,6 +1081,9 @@ export class WudangScene extends Phaser.Scene {
     this.enemies.getChildren().forEach((enemy) => {
       if (!enemy.active) return;
 
+      // 冲锋中的BOSS不受巡逻逻辑打断
+      if (enemy.isBoss && enemy.isCharging) return;
+
       if (enemy.x <= enemy.patrolMinX) enemy.patrolDirection = 1;
       else if (enemy.x >= enemy.patrolMaxX) enemy.patrolDirection = -1;
 
@@ -845,10 +1097,18 @@ export class WudangScene extends Phaser.Scene {
       this.bossLabel.setPosition(this.boss.x, this.boss.y - 52);
     }
 
-    // 首次接近BOSS触发提示
+    // 首次接近BOSS触发提示、显示血条、封锁竞技场
     if (this.boss && this.boss.active && !this.bossEncounterShown && Math.abs(this.player.x - this.boss.x) < 500) {
       this.bossEncounterShown = true;
       this.showLevelBanner('⚔️ 守金将军登场！集中精力！');
+      this.showBossHPBar();
+      this.lockBossArena();
+    }
+
+    // BOSS 阶段与主动攻击更新
+    if (this.boss && this.boss.active) {
+      this.updateBossPhase();
+      this.updateBossHPBar();
     }
 
     if (this.quizItems) {
@@ -861,6 +1121,8 @@ export class WudangScene extends Phaser.Scene {
     }
 
     if (this.player.y > 490) this.respawnPlayer();
+    // BOSS 掉落后原地重生（血量阶段保持不变）
+    if (this.boss && this.boss.active && this.boss.y > 490) this.respawnBoss();
 
     // 动态音乐
     if (!this.levelFinished) {
@@ -887,7 +1149,13 @@ export class WudangScene extends Phaser.Scene {
       } else if (nearNpc && !this.npc.complete) {
         this.hud.setHint('靠近真人，按 F 交谈');
       } else if (this.boss && this.boss.active && Math.abs(this.player.x - this.boss.x) < 450) {
-        this.hud.setHint('⚔️ 守金将军！  J 连打 · X 玄武护体');
+        const ph = this.boss.phase;
+        const bossHint = ph === 3
+          ? '💀 第三阶段！躲弹幕·X护体·J连打'
+          : ph === 2
+          ? '⚡ 第二阶段！警惕冲锋·X护体·J连打'
+          : '⚔️ 守金将军！J 连打 · X 玄武护体';
+        this.hud.setHint(bossHint);
       } else if (this.portalActive && Math.abs(this.player.x - this.portal.x) < 100) {
         this.hud.setHint('走进传送门，前往五岳！');
       } else if (this.npc.complete && !this.bossDefeated) {
