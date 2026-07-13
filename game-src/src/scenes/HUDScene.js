@@ -109,7 +109,16 @@ export class HUDScene extends Phaser.Scene {
         this.showBanner('✨ 太极八卦拳 已解锁！');
       }
       if (itemKey === ITEMS.TAIJI_SWORD) {
-        this.showBanner('⚔️ 太极八卦剑 已获得！');
+        this.hotbar.flashSlot(8);
+        this.showBanner('⚔️ 太极八卦剑！J键一击必杀！');
+      }
+      if (itemKey === ITEMS.CRYSTAL_HUANGLONG) {
+        this.hotbar.flashSlot(2);
+        this.showBanner('🐉 黄龙晶已解锁！C键黄龙震地！');
+      }
+      if (itemKey === ITEMS.SKILL_YIJINJING) {
+        this.hotbar.flashSlot(7);
+        this.showBanner('💪 易筋经已习得！V键爆发！');
       }
     };
 

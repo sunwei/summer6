@@ -28,6 +28,7 @@ export const SCENES = {
   MENU: 'MenuScene',
   HUD: 'HUDScene',
   WUDANG: 'WudangScene',
+  SONGSHAN: 'SongshanScene',
 };
 export const ITEMS = {
   CRYSTAL_ZHUQUE: 'crystal_zhuque',
@@ -41,4 +42,5 @@ export const ITEMS = {
   SKILL_TAIJI: 'skill_taiji',
   SKILL_YIJINJING: 'skill_yijinjing',
   TAIJI_SWORD: 'taiji_sword',
+  SONGSHAN_COMPLETE: 'songshan_complete',  // 嵩山过关标志
 };

@@ -32,11 +32,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.state = PLAYER_STATES.IDLE;
     this.nextAttackTime = 0;
     this.invulnerableUntil = 0;
-    this.shieldActiveUntil = 0;    // 玄武护体激活结束时间
-    this.shieldCooldownUntil = 0;  // 玄武护体冷却结束时间
+    this.shieldActiveUntil = 0;
+    this.shieldCooldownUntil = 0;
+    this.huanglongCooldown = 0;   // 黄龙震地冷却
+    this.yijinjingCooldown = 0;   // 易筋经爆发冷却
     this.lastTrailTime = 0;
     this.skillCooldown = 0;
     this.guardRing = null;
+    this.activeWeapon = 'palm';   // 'palm'（太极八卦掌）或 'sword'（太极剑）
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -73,7 +76,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       jump: Phaser.Input.Keyboard.KeyCodes.SPACE,
       attack: Phaser.Input.Keyboard.KeyCodes.J,
       skill_zhuque: Phaser.Input.Keyboard.KeyCodes.Z,
-      skill_xuanwu: Phaser.Input.Keyboard.KeyCodes.X,   // 玄武护体（替代原K键太极护体）
+      skill_xuanwu: Phaser.Input.Keyboard.KeyCodes.X,
+      skill_huanglong: Phaser.Input.Keyboard.KeyCodes.C,  // 黄龙震地
+      skill_yijinjing: Phaser.Input.Keyboard.KeyCodes.V,  // 易筋经爆发
+      weaponSwitch: Phaser.Input.Keyboard.KeyCodes.Q,     // 切换武器
       interact: Phaser.Input.Keyboard.KeyCodes.F,
       interactAlt: Phaser.Input.Keyboard.KeyCodes.E,
       backpack: Phaser.Input.Keyboard.KeyCodes.B,
@@ -81,10 +87,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   syncSkills(inventoryState) {
-    this.skills[ITEMS.CRYSTAL_ZHUQUE] = !!inventoryState[ITEMS.CRYSTAL_ZHUQUE];
-    this.skills[ITEMS.CRYSTAL_XUANWU] = !!inventoryState[ITEMS.CRYSTAL_XUANWU];
-    this.skills[ITEMS.SKILL_TAIJI] = !!inventoryState[ITEMS.SKILL_TAIJI];
-    this.skills[ITEMS.SKILL_YIJINJING] = !!inventoryState[ITEMS.SKILL_YIJINJING];
+    this.skills[ITEMS.CRYSTAL_ZHUQUE]    = !!inventoryState[ITEMS.CRYSTAL_ZHUQUE];
+    this.skills[ITEMS.CRYSTAL_XUANWU]    = !!inventoryState[ITEMS.CRYSTAL_XUANWU];
+    this.skills[ITEMS.CRYSTAL_HUANGLONG] = !!inventoryState[ITEMS.CRYSTAL_HUANGLONG];
+    this.skills[ITEMS.SKILL_TAIJI]       = !!inventoryState[ITEMS.SKILL_TAIJI];
+    this.skills[ITEMS.SKILL_YIJINJING]   = !!inventoryState[ITEMS.SKILL_YIJINJING];
+    this.skills[ITEMS.TAIJI_SWORD]       = !!inventoryState[ITEMS.TAIJI_SWORD];
+    // 没有剑时重置为拳模式
+    if (!this.skills[ITEMS.TAIJI_SWORD]) this.activeWeapon = 'palm';
   }
 
   isGuarding() {
@@ -113,14 +123,30 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.basicAttack();
     }
 
-    // Z key — 朱雀烈炎 (fire AOE crystal skill)
+    // Q key — 武器切换（持有太极剑后可用）
+    if (this.skills[ITEMS.TAIJI_SWORD] && Phaser.Input.Keyboard.JustDown(this.keys.weaponSwitch)) {
+      this.activeWeapon = this.activeWeapon === 'palm' ? 'sword' : 'palm';
+      this.showWeaponNotice();
+    }
+
+    // Z key — 朱雀烈炎
     if (this.skills[ITEMS.CRYSTAL_ZHUQUE] && Phaser.Input.Keyboard.JustDown(this.keys.skill_zhuque)) {
       this.activateCrystalSkill('zhuque');
     }
 
-    // X key — 玄武护体 (xuanwu shield, from Hengshan crystal)
+    // X key — 玄武护体
     if (this.skills[ITEMS.CRYSTAL_XUANWU] && Phaser.Input.Keyboard.JustDown(this.keys.skill_xuanwu)) {
       this.useXuanwuShield();
+    }
+
+    // C key — 黄龙震地
+    if (this.skills[ITEMS.CRYSTAL_HUANGLONG] && Phaser.Input.Keyboard.JustDown(this.keys.skill_huanglong)) {
+      this.activateHuanglongStrike();
+    }
+
+    // V key — 易筋经爆发
+    if (this.skills[ITEMS.SKILL_YIJINJING] && Phaser.Input.Keyboard.JustDown(this.keys.skill_yijinjing)) {
+      this.activateYijinjing();
     }
 
     if (!this.isAttacking) {
@@ -197,14 +223,16 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.isAttacking = true;
-    this.nextAttackTime = this.scene.time.now + 260;
+    this.nextAttackTime = this.scene.time.now + 280;
     this.anims.stop();
     this.setVelocityX(0);
     this.setTexture('player_attack');
     sfx.play('attack');
 
-    // Melee hitbox size and damage are driven by WeaponSystem — wisdom expands hit range
-    const ms = weaponSystem.calc(WEAPONS.MELEE, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus });
+    // 根据当前武器模式选择伤害/范围
+    const useSword = this.activeWeapon === 'sword' && this.skills[ITEMS.TAIJI_SWORD];
+    const weaponKey = useSword ? WEAPONS.TAIJI_SWORD : WEAPONS.MELEE;
+    const ms = weaponSystem.calc(weaponKey, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus });
     const hitboxX = this.x + (this.facingRight ? ms.range : -ms.range);
     const hitbox = this.scene.add.zone(hitboxX, this.y - 4, ms.range * 2, ms.height);
     this.scene.physics.add.existing(hitbox);
@@ -217,57 +245,76 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
           this.scene.damageEnemy(enemy, ms.damage);
           return;
         }
-
         this.scene.defeatEnemy(enemy);
       });
     }
 
-    this.scene.time.delayedCall(100, () => hitbox.destroy());
-    this.scene.time.delayedCall(180, () => {
-      this.isAttacking = false;
-    });
+    // 太极剑：金色斩击特效
+    if (useSword) {
+      this.showSwordSlash();
+    }
 
-    if (this.skills[ITEMS.SKILL_TAIJI]) {
+    this.scene.time.delayedCall(100, () => hitbox.destroy());
+    this.scene.time.delayedCall(200, () => { this.isAttacking = false; });
+
+    // 八卦拳模式下且已习得太极拳才发射元气弹
+    if (!useSword && this.skills[ITEMS.SKILL_TAIJI]) {
       this.shootBaguaOrb();
     }
   }
 
+  // 武器切换提示
+  showWeaponNotice() {
+    const scene = this.scene;
+    const label = this.activeWeapon === 'sword' ? '⚔️ 太极剑' : '☯ 太极八卦掌';
+    const color = this.activeWeapon === 'sword' ? '#ffd700' : '#88eeff';
+    const notice = scene.add.text(this.x, this.y - 52, label, {
+      fontSize: '18px', color, stroke: '#000000', strokeThickness: 3,
+      backgroundColor: '#00000088', padding: { x: 6, y: 3 },
+    }).setOrigin(0.5).setDepth(500);
+    scene.tweens.add({
+      targets: notice, alpha: 0, y: notice.y - 22,
+      duration: 900, onComplete: () => notice.destroy(),
+    });
+  }
+
+  // 太极八卦剑斩击光效
+  showSwordSlash() {
+    const scene = this.scene;
+    const dir = this.facingRight ? 1 : -1;
+    const sx = this.x + dir * 38;
+    const sy = this.y - 10;
+
+    const slash = scene.add.rectangle(sx, sy, 66, 54, 0xffd700, 0.55)
+      .setDepth(this.depth + 1).setRotation(dir > 0 ? -0.28 : 0.28);
+    scene.tweens.add({ targets: slash, alpha: 0, scaleX: 1.7, scaleY: 1.4, duration: 140, ease: 'Quad.easeOut', onComplete: () => slash.destroy() });
+
+    const streak = scene.add.rectangle(sx - dir * 8, sy + 4, 52, 5, 0xffffff, 0.92)
+      .setDepth(this.depth + 2).setRotation(dir > 0 ? -0.48 : 0.48);
+    scene.tweens.add({ targets: streak, alpha: 0, scaleX: 1.6, duration: 100, onComplete: () => streak.destroy() });
+  }
+
+  // 八卦元气弹（J键 + 太极拳）
   shootBaguaOrb() {
     const scene = this.scene;
     const dir = this.facingRight ? 1 : -1;
-
-    // All orb properties are driven by WeaponSystem — grows faster and larger with wisdom
     const os = weaponSystem.calc(WEAPONS.BAGUA_ORB, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus });
-
     const orb = scene.physics.add.image(this.x + dir * 24, this.y - 12, 'bagua_orb');
     orb.setDepth(this.depth + 1);
     orb.setScale(os.scale);
     orb.damage = os.damage;
     sfx.play('bagua_shoot');
-
-    // Add to group FIRST, then override body settings so group defaults don't revert them
     if (scene.playerBullets) scene.playerBullets.add(orb);
     orb.body.setAllowGravity(false);
     orb.body.setVelocity(dir * os.speed, 0);
-
-    // Fast spinning yin-yang effect
-    scene.tweens.add({
-      targets: orb,
-      angle: dir > 0 ? 720 : -720,
-      duration: 600,
-      repeat: -1,
-    });
-
-    scene.time.delayedCall(os.durationMs, () => {
-      if (orb.active) orb.destroy();
-    });
+    scene.tweens.add({ targets: orb, angle: dir > 0 ? 720 : -720, duration: 600, repeat: -1 });
+    scene.time.delayedCall(os.durationMs, () => { if (orb.active) orb.destroy(); });
   }
 
+  // 玄武护体（X键）
   useXuanwuShield() {
     if (!this.skills[ITEMS.CRYSTAL_XUANWU]) return;
     if (this.scene.time.now < this.shieldCooldownUntil) return;
-
-    // Guard radius and duration — fixed by story system (2s duration, 4s cooldown)
     const gs = weaponSystem.calc(WEAPONS.XUANWU_GUARD, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus });
     this.shieldActiveUntil = this.scene.time.now + gs.durationMs;
     const cdMs = gs.cooldownMs;
@@ -277,13 +324,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.showGuardRing(gs.radius, gs.durationMs);
   }
 
+  // 朱雀烈焰（Z键）
   activateCrystalSkill(type) {
-    if (this.skillCooldown > this.scene.time.now) {
-      return;
-    }
-
+    if (this.skillCooldown > this.scene.time.now) return;
     if (type === 'zhuque') {
-      // AOE range and cooldown both scale with wisdom via WeaponSystem
       const zs = weaponSystem.calc(WEAPONS.ZHUQUE, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus });
       this.skillCooldown = this.scene.time.now + zs.cooldownMs;
       bus.emit(EVENTS.SKILL_COOLDOWN, { itemKey: ITEMS.CRYSTAL_ZHUQUE, duration: zs.cooldownMs });
@@ -292,75 +336,64 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
   }
 
+  // 玄武护体光环
   showGuardRing(radius = 28, durationMs = 700) {
-    // Destroy any lingering guard visual
-    if (this.guardRing) {
-      this.guardRing.destroy();
-      this.guardRing = null;
-    }
-
+    if (this.guardRing) { this.guardRing.destroy(); this.guardRing = null; }
     const scene = this.scene;
-
-    // Container tracks player position via update()
     const container = scene.add.container(this.x, this.y - 6);
     container.setDepth(this.depth + 1);
     this.guardRing = container;
 
-    // ── Three-layer xuanwu tortoise-shell dome (dark teal) ───────────────
-    // Outer shell: dark teal rim
     const outerRing = scene.add.circle(0, 0, radius, 0x26c6da, 0.10);
     outerRing.setStrokeStyle(3, 0x00e5ff, 1.0);
-
-    // Middle layer: softer teal glow
     const midRing = scene.add.circle(0, 0, Math.round(radius * 0.72), 0x4dd0e1, 0.08);
     midRing.setStrokeStyle(1.5, 0x26c6da, 0.70);
-
-    // Inner core: white-blue shimmer (energy centre)
     const innerGlow = scene.add.circle(0, 0, Math.round(radius * 0.44), 0xb2ebf2, 0.20);
-
     container.add([innerGlow, midRing, outerRing]);
 
-    // ── Activation burst (world-space ripple, teal) ──────────────────────
     const burst = scene.add.circle(this.x, this.y - 6, radius * 0.35, 0x26c6da, 0.55);
     burst.setStrokeStyle(2, 0xb2ebf2, 1.0);
     burst.setDepth(this.depth + 2);
-    scene.tweens.add({
-      targets: burst,
-      scale: { from: 0.3, to: 2.4 },
-      alpha: 0,
-      duration: 360,
-      ease: 'Cubic.easeOut',
-      onComplete: () => burst.destroy(),
-    });
+    scene.tweens.add({ targets: burst, scale: { from: 0.3, to: 2.4 }, alpha: 0, duration: 360, ease: 'Cubic.easeOut', onComplete: () => burst.destroy() });
 
-    // ── Continuous pulsing shimmer while guard is active ──────────────────
-    const pulseTween = scene.tweens.add({
-      targets: container,
-      scaleX: { from: 1.00, to: 1.10 },
-      scaleY: { from: 0.92, to: 1.06 },
-      duration: 380,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
+    const pulseTween = scene.tweens.add({ targets: container, scaleX: { from: 1.00, to: 1.10 }, scaleY: { from: 0.92, to: 1.06 }, duration: 380, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    // ── Auto-expire: fade out when guard window closes ────────────────────
     scene.time.delayedCall(durationMs, () => {
       pulseTween.stop();
       if (container.active) {
-        scene.tweens.add({
-          targets: container,
-          alpha: 0,
-          scale: 1.3,
-          duration: 200,
-          ease: 'Quad.easeOut',
-          onComplete: () => {
-            container.destroy();
-            if (this.guardRing === container) this.guardRing = null;
-          },
-        });
+        scene.tweens.add({ targets: container, alpha: 0, scale: 1.3, duration: 200, ease: 'Quad.easeOut', onComplete: () => { container.destroy(); if (this.guardRing === container) this.guardRing = null; } });
       }
     });
+  }
+
+  // 黄龙震地（C键）
+  activateHuanglongStrike() {
+    if (this.scene.time.now < this.huanglongCooldown) return;
+    const hs = weaponSystem.calc(WEAPONS.HUANGLONG_STRIKE, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus });
+    this.huanglongCooldown = this.scene.time.now + hs.cooldownMs;
+    bus.emit(EVENTS.SKILL_COOLDOWN, { itemKey: ITEMS.CRYSTAL_HUANGLONG, duration: hs.cooldownMs });
+    bus.emit(EVENTS.CRYSTAL_SKILL, {
+      type: 'huanglong',
+      x: this.x, y: this.y,
+      dir: this.facingRight ? 1 : -1,
+      range: hs.range, height: hs.height, damage: hs.damage,
+    });
+    sfx.play('attack');
+  }
+
+  // 易筋经爆发（V键）
+  activateYijinjing() {
+    if (this.scene.time.now < this.yijinjingCooldown) return;
+    const ys = weaponSystem.calc(WEAPONS.YIJINJING, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus });
+    this.yijinjingCooldown = this.scene.time.now + ys.cooldownMs;
+    bus.emit(EVENTS.SKILL_COOLDOWN, { itemKey: ITEMS.SKILL_YIJINJING, duration: ys.cooldownMs });
+    bus.emit(EVENTS.CRYSTAL_SKILL, {
+      type: 'yijinjing',
+      x: this.x, y: this.y,
+      dir: this.facingRight ? 1 : -1,
+      range: ys.range, damage: ys.damage,
+    });
+    sfx.play('attack');
   }
 
   leaveTrailWhenRunning() {

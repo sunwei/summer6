@@ -91,6 +91,11 @@ export class WudangScene extends Phaser.Scene {
     this.playerBullets = this.physics.add.group({ allowGravity: false });
     this.physics.add.overlap(this.playerBullets, this.enemies, this.handleBulletHit, null, this);
 
+    // 敌方弹幕与玩家碰撞
+    if (this.enemyProjectiles) {
+      this.physics.add.overlap(this.player, this.enemyProjectiles, this.handleEnemyProjectileHit, null, this);
+    }
+
     this.createEnergyOrbs();
     this.physics.add.overlap(this.player, this.energyOrbs, this.collectOrb, null, this);
 
@@ -106,16 +111,24 @@ export class WudangScene extends Phaser.Scene {
       this.player.syncSkills(inventory);
     };
 
-    this.onCrystalSkill = ({ x, y, range, damage }) => {
-      this.zhuqueBlast(x, y, range);
-      this.showLevelBanner('🔥 朱雀烈焰！');
-      this.enemies.getChildren().forEach((enemy) => {
-        if (!enemy.active) return;
-        const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
-        if (dist < range) {
-          this.damageEnemy(enemy, damage);
-        }
-      });
+    this.onCrystalSkill = ({ type, x, y, dir, range, height, damage }) => {
+      if (type === 'zhuque') {
+        this.zhuqueBlast(x, y, range);
+        this.showLevelBanner('🔥 朱雀烈焰！');
+        this.enemies.getChildren().forEach((enemy) => {
+          if (!enemy.active) return;
+          const dist = Phaser.Math.Distance.Between(x, y, enemy.x, enemy.y);
+          if (dist < range) {
+            this.damageEnemy(enemy, damage);
+          }
+        });
+      } else if (type === 'huanglong') {
+        this.huanglongStrike(x, y, dir, range, height, damage);
+        this.showLevelBanner('🐉 黄龙震地！');
+      } else if (type === 'yijinjing') {
+        this.yijinjingBlast(x, y, dir, range, damage);
+        this.showLevelBanner('💪 易筋经爆发！');
+      }
     };
 
     bus.on(EVENTS.ITEM_COLLECTED, this.onItemCollected);
@@ -393,30 +406,54 @@ export class WudangScene extends Phaser.Scene {
 
   createEnemies() {
     this.enemies = this.physics.add.group();
+    this.enemyProjectiles = this.physics.add.group({ allowGravity: false });
 
-    const spawnEnemy = (x, y, patrolMinX, patrolMaxX) => {
-      const enemy = this.enemies.create(x, y, 'enemy_spirit');
-      enemy.body.setSize(18, 34);
-      enemy.body.setOffset(7, 10);
-      enemy.setCollideWorldBounds(true);
-      enemy.patrolMinX = patrolMinX;
-      enemy.patrolMaxX = patrolMaxX;
-      enemy.patrolDirection = 1;
-      enemy.hp = 20;           // 需2拳打死
-      enemy.patrolSpeed = 55;
-      enemy.setVelocityX(55);
-      return enemy;
+    // 近攻灵体（标准）
+    const spawnMelee = (x, y, minX, maxX) => {
+      const e = this.enemies.create(x, y, 'enemy_spirit');
+      e.body.setSize(18, 34); e.body.setOffset(7, 10);
+      e.setCollideWorldBounds(true);
+      e.patrolMinX = minX; e.patrolMaxX = maxX; e.patrolDirection = 1;
+      e.hp = 40; e.patrolSpeed = 55; e.contactDamage = 10;
+      e.setVelocityX(55);
+      return e;
+    };
+
+    // 重装近攻（血厚、快速、伤高）
+    const spawnHeavy = (x, y, minX, maxX) => {
+      const e = this.enemies.create(x, y, 'enemy_spirit');
+      e.body.setSize(18, 36); e.body.setOffset(7, 10);
+      e.setCollideWorldBounds(true);
+      e.patrolMinX = minX; e.patrolMaxX = maxX; e.patrolDirection = 1;
+      e.hp = 50; e.patrolSpeed = 70; e.contactDamage = 18; e.isHeavy = true;
+      e.setTint(0xff3300); e.setScale(1.18);
+      e.setVelocityX(70);
+      return e;
+    };
+
+    // 远攻灵体（远距离射击）
+    const spawnRanged = (x, y, minX, maxX) => {
+      const e = this.enemies.create(x, y, 'enemy_spirit');
+      e.body.setSize(18, 34); e.body.setOffset(7, 10);
+      e.setCollideWorldBounds(true);
+      e.patrolMinX = minX; e.patrolMaxX = maxX; e.patrolDirection = 1;
+      e.hp = 30; e.patrolSpeed = 40; e.contactDamage = 8; e.isRanged = true;
+      e.lastShootTime = 0; e.shootInterval = 2800;
+      e.setTint(0x8833ff);
+      e.setVelocityX(40);
+      return e;
     };
 
     // 山脚/中段
-    spawnEnemy(360, 300, 300, 430);
-    spawnEnemy(1180, 250, 1080, 1240);
-    spawnEnemy(2190, 210, 2100, 2280);
+    spawnMelee(360, 300, 300, 430);
+    spawnRanged(750, 218, 600, 860);   // 中段平台远攻
+    spawnHeavy(1180, 250, 1080, 1240);
+    spawnRanged(2190, 210, 2100, 2280);
 
     // 金顶石阶守卫
-    spawnEnemy(3290, 350, 3250, 3340);   // 第一阶
-    spawnEnemy(3590, 270, 3550, 3640);   // 第三阶
-    spawnEnemy(3890, 190, 3850, 3940);   // 第五阶
+    spawnHeavy(3290, 350, 3250, 3340);
+    spawnRanged(3590, 270, 3550, 3640);
+    spawnMelee(3890, 190, 3850, 3940);
   }
 
   // ──────────────────────────────────────────────────────────
@@ -431,15 +468,18 @@ export class WudangScene extends Phaser.Scene {
     boss.patrolMinX = 4120;
     boss.patrolMaxX = 4760;
     boss.patrolDirection = -1;
-    boss.maxHp = 200;
-    boss.hp = 200;
+    boss.maxHp = 500;
+    boss.hp = 500;
     boss.isBoss = true;
-    boss.phase = 1;               // 当前阶段（1/2/3）
-    boss.contactDamage = 20;      // 接触伤害（随阶段上升）
+    boss.phase = 1;
+    boss.contactDamage = 20;
     boss.patrolSpeed = 70;
-    boss.lastChargeTime = 0;      // 上次冲锋时间
-    boss.lastProjectileTime = 0;  // 上次发弹时间
-    boss.isCharging = false;      // 是否正在冲锋
+    boss.lastChargeTime = 0;
+    boss.lastProjectileTime = 0;
+    boss.lastJumpTime = 0;
+    boss.isCharging = false;
+    boss.isJumping = false;
+    boss.jumpLanding = false;
     boss.setVelocityX(-70);
     this.boss = boss;
 
@@ -557,6 +597,8 @@ export class WudangScene extends Phaser.Scene {
     boss.setPosition(4400, 100);
     boss.setVelocity(0, 0);
     boss.isCharging = false;
+    boss.isJumping = false;
+    boss.jumpLanding = false;
     boss.patrolDirection = -1;
     boss.setVelocityX(-boss.patrolSpeed);
     // 重新应用当前阶段的颜色
@@ -581,8 +623,15 @@ export class WudangScene extends Phaser.Scene {
 
     const now = this.time.now;
 
+    // 跳跃攻击（全阶段，随阶段缩短间隔）
+    const jumpInterval = boss.phase === 3 ? 2800 : boss.phase === 2 ? 4200 : 6000;
+    if (!boss.isCharging && !boss.isJumping && now - boss.lastJumpTime > jumpInterval) {
+      boss.lastJumpTime = now;
+      this.bossJumpAttack(boss);
+    }
+
     // 第二阶段起启用冲锋
-    if (boss.phase >= 2 && !boss.isCharging) {
+    if (boss.phase >= 2 && !boss.isCharging && !boss.isJumping) {
       const chargeInterval = boss.phase === 3 ? 2000 : 3200;
       if (now - boss.lastChargeTime > chargeInterval) {
         boss.lastChargeTime = now;
@@ -648,6 +697,80 @@ export class WudangScene extends Phaser.Scene {
     this.time.delayedCall(620, () => {
       if (boss && boss.active) boss.isCharging = false;
     });
+  }
+
+  // BOSS 跳跃攻击（全阶段）
+  bossJumpAttack(boss) {
+    if (!boss || !boss.active || boss.isJumping || boss.isCharging) return;
+    if (!boss.body.blocked.down) return;
+    boss.isJumping = true;
+    boss.jumpLanding = false;
+    const dir = this.player.x > boss.x ? 1 : -1;
+    const jumpXSpeed = boss.phase === 3 ? 250 : boss.phase === 2 ? 190 : 140;
+    boss.setVelocityY(-480);
+    boss.setVelocityX(dir * jumpXSpeed);
+    boss.setFlipX(dir < 0);
+
+    const warn = this.add.text(boss.x, boss.y - 72, '⬆ 跳击！', {
+      fontSize: '18px', color: '#ffaa00',
+      stroke: '#000000', strokeThickness: 3, fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(205);
+    this.tweens.add({ targets: warn, alpha: 0, y: warn.y - 22, duration: 500, onComplete: () => warn.destroy() });
+
+    // 300ms 后允许检测落地（防止立即触发）
+    this.time.delayedCall(300, () => { if (boss && boss.active) boss.jumpLanding = true; });
+  }
+
+  // BOSS 落地冲击
+  bossLandingImpact(boss) {
+    this.cameras.main.shake(260, 0.011);
+    this.burstParticles(boss.x, boss.y + 14, 18, 0xffaa00);
+    const ring = this.add.circle(boss.x, boss.y + 14, 8, 0xff8800, 0)
+      .setStrokeStyle(3, 0xff6600, 0.9).setDepth(52);
+    this.tweens.add({ targets: ring, scaleX: 8, scaleY: 4, alpha: 0, duration: 400, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+    const dist = Phaser.Math.Distance.Between(boss.x, boss.y, this.player.x, this.player.y);
+    if (dist < 95) {
+      if (this.player.isGuarding()) {
+        this.player.flashGuardSuccess();
+      } else {
+        this.player.hurt(boss.phase >= 3 ? 24 : 18, boss.x);
+        this.showLevelBanner('💥 跳跃重击！');
+      }
+    }
+    boss.setVelocityX(0);
+  }
+
+  // 敌方弹幕射击（远攻型敌人）
+  enemyShootProjectile(enemy) {
+    if (!enemy || !enemy.active || !this.player) return;
+    const dir = this.player.x > enemy.x ? 1 : -1;
+    const proj = this.physics.add.image(enemy.x + dir * 18, enemy.y - 10, 'bagua_orb');
+    proj.setTint(0xaa22ff);
+    proj.setScale(0.85);
+    proj.damage = 12;
+    proj.body.setAllowGravity(false);
+    proj.body.setVelocity(dir * 210, 0);
+    if (this.enemyProjectiles) this.enemyProjectiles.add(proj);
+    this.tweens.add({ targets: proj, angle: dir > 0 ? 360 : -360, duration: 500, repeat: -1 });
+
+    const warn = this.add.text(enemy.x, enemy.y - 30, '⚡', {
+      fontSize: '14px', color: '#cc44ff',
+    }).setOrigin(0.5).setDepth(100);
+    this.tweens.add({ targets: warn, alpha: 0, y: warn.y - 14, duration: 380, onComplete: () => warn.destroy() });
+
+    this.time.delayedCall(2200, () => { if (proj && proj.active) proj.destroy(); });
+  }
+
+  // 敌方弹幕命中玩家
+  handleEnemyProjectileHit(player, proj) {
+    if (!proj.active) return;
+    this.burstParticles(proj.x, proj.y, 8, 0xaa22ff);
+    proj.destroy();
+    if (player.isGuarding()) {
+      player.flashGuardSuccess();
+    } else {
+      player.hurt(proj.damage || 12, proj.x);
+    }
   }
 
   // BOSS 弹幕（第三阶段）
@@ -800,7 +923,7 @@ export class WudangScene extends Phaser.Scene {
 
   showControlsReminder() {
     const reminder = this.add
-      .text(GAME_WIDTH / 2, 76, '← → 移动  |  ↑/空格 跳跃  |  J 太极拳  |  Z 朱雀  |  X 玄武护体  |  F 交谈', {
+      .text(GAME_WIDTH / 2, 76, '← → 移动  |  ↑/空格 跳跃  |  J 攻击  |  Q 切换武器  |  Z 朱雀  |  X 护体  |  C 黄龙  |  F 交谈', {
         fontSize: '17px',
         color: '#ffffff',
         backgroundColor: '#00000099',
@@ -886,7 +1009,8 @@ export class WudangScene extends Phaser.Scene {
       if (!sword.active) return;
       sword.destroy(); glow.destroy(); hint.destroy();
       if (skillSystem.collect(ITEMS.TAIJI_SWORD)) {
-        this.showLevelBanner('⚔️ 太极八卦剑 已获得！');
+        skillSystem.collect(ITEMS.CRYSTAL_HUANGLONG);  // 同时解锁嵩山黄龙晶
+        this.showLevelBanner('⚔️ 太极八卦剑 + 🐉 黄龙晶 已获得！');
         this.time.delayedCall(700, () => this.showMapDialogue());
       }
     });
@@ -930,6 +1054,8 @@ export class WudangScene extends Phaser.Scene {
 
   handleBulletHit(bullet, enemy) {
     if (!bullet.active || !enemy.active) return;
+    // BUG修复：禁止从竞技场外远程狙击BOSS
+    if (enemy.isBoss && this.player.x < 4100) return;
     this.burstParticles(bullet.x, bullet.y, 8, 0x4488ff);
     const dmg = bullet.damage || 8;
     bullet.destroy();
@@ -958,7 +1084,9 @@ export class WudangScene extends Phaser.Scene {
 
   damageEnemy(enemy, damage = 10) {
     if (!enemy || !enemy.active) return;
-    enemy.hp = typeof enemy.hp === 'number' ? enemy.hp : 20;
+    enemy.hp = typeof enemy.hp === 'number' ? enemy.hp : (enemy.isBoss ? 500 : 40);
+    // BOSS 单次最大受伤 25，确保需要 20+ 下才能击败
+    if (enemy.isBoss) damage = Math.min(damage, 25);
     enemy.hp -= damage;
 
     if (enemy.hp > 0) {
@@ -1024,6 +1152,40 @@ export class WudangScene extends Phaser.Scene {
     }
   }
 
+  // 黄龙震地特效 + 伤害
+  huanglongStrike(x, y, dir, range, height, damage) {
+    const cx = x + dir * range * 0.5;
+    const wave = this.add.rectangle(cx, y - 6, range, height, 0xffd700, 0.32).setDepth(52).setStrokeStyle(3, 0xffa500, 0.88);
+    this.tweens.add({ targets: wave, alpha: 0, scaleX: 1.5, scaleY: 1.6, duration: 400, ease: 'Cubic.easeOut', onComplete: () => wave.destroy() });
+    for (let i = 0; i < 12; i++) {
+      const bit = this.add.circle(x + dir * Phaser.Math.Between(10, range), y + Phaser.Math.Between(-height * 0.4, height * 0.4), Phaser.Math.Between(3, 8), 0xffd700, 0.85).setDepth(53);
+      this.tweens.add({ targets: bit, alpha: 0, x: bit.x + dir * Phaser.Math.Between(20, 60), duration: Phaser.Math.Between(200, 420), onComplete: () => bit.destroy() });
+    }
+    this.enemies.getChildren().forEach((enemy) => {
+      if (!enemy.active) return;
+      const inZone = dir > 0
+        ? enemy.x >= x && enemy.x <= x + range && Math.abs(enemy.y - y) < height * 0.6
+        : enemy.x <= x && enemy.x >= x - range && Math.abs(enemy.y - y) < height * 0.6;
+      if (inZone) this.damageEnemy(enemy, damage);
+    });
+  }
+
+  // 易筋经爆发特效 + 伤害
+  yijinjingBlast(x, y, dir, range, damage) {
+    const wave = this.add.rectangle(x + dir * range * 0.5, y - 10, range, 44, 0xff9f43, 0.45).setDepth(52).setStrokeStyle(2, 0xffd700, 0.85);
+    this.tweens.add({ targets: wave, alpha: 0, scaleX: 1.7, duration: 320, onComplete: () => wave.destroy() });
+    this.enemies.getChildren().forEach((enemy) => {
+      if (!enemy.active) return;
+      const inZone = dir > 0
+        ? enemy.x >= x && enemy.x <= x + range && Math.abs(enemy.y - y) < 50
+        : enemy.x <= x && enemy.x >= x - range && Math.abs(enemy.y - y) < 50;
+      if (inZone) {
+        this.damageEnemy(enemy, damage);
+        enemy.setVelocityX(dir * 220);
+      }
+    });
+  }
+
   burstParticles(x, y, count, tint) {
     for (let i = 0; i < count; i += 1) {
       const bit = this.add.image(x, y, 'particle').setTint(tint).setAlpha(0.9);
@@ -1062,7 +1224,7 @@ export class WudangScene extends Phaser.Scene {
     this.time.delayedCall(1800, () => {
       music.stop();
       this.scene.stop(SCENES.HUD);
-      this.scene.start(SCENES.MENU);
+      this.scene.start(SCENES.SONGSHAN);
       overlay.destroy();
       text.destroy();
     });
@@ -1077,12 +1239,35 @@ export class WudangScene extends Phaser.Scene {
 
     const nearNpc = this.npc.update(this.player);
 
-    // 所有敌人（含BOSS）巡逻
+    // 所有敌人（含BOSS）巡逻 / 远攻 AI
     this.enemies.getChildren().forEach((enemy) => {
       if (!enemy.active) return;
 
-      // 冲锋中的BOSS不受巡逻逻辑打断
-      if (enemy.isBoss && enemy.isCharging) return;
+      // 冲锋或跳跃中的BOSS不受巡逻逻辑打断
+      if (enemy.isBoss && (enemy.isCharging || enemy.isJumping)) return;
+
+      // BOSS 主动追击玩家（在巡逻范围内）
+      if (enemy.isBoss && !enemy.isCharging && !enemy.isJumping) {
+        const dx = this.player.x - enemy.x;
+        if (Math.abs(dx) > 20) enemy.patrolDirection = dx > 0 ? 1 : -1;
+      }
+
+      // 远攻敌人 AI
+      if (enemy.isRanged) {
+        const dist = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y);
+        const now = this.time.now;
+        if (dist < 100) {
+          // 距离太近时后退
+          const rd = enemy.x < this.player.x ? -1 : 1;
+          enemy.setVelocityX(rd * enemy.patrolSpeed);
+          enemy.setFlipX(rd < 0);
+          return;
+        }
+        if (dist < 400 && now - enemy.lastShootTime > enemy.shootInterval) {
+          enemy.lastShootTime = now;
+          this.enemyShootProjectile(enemy);
+        }
+      }
 
       if (enemy.x <= enemy.patrolMinX) enemy.patrolDirection = 1;
       else if (enemy.x >= enemy.patrolMaxX) enemy.patrolDirection = -1;
@@ -1092,13 +1277,22 @@ export class WudangScene extends Phaser.Scene {
       enemy.setFlipX(enemy.patrolDirection < 0);
     });
 
+    // BOSS 跳跃落地检测
+    if (this.boss && this.boss.active && this.boss.isJumping) {
+      if (this.boss.jumpLanding && this.boss.body.blocked.down) {
+        this.boss.isJumping = false;
+        this.boss.jumpLanding = false;
+        this.bossLandingImpact(this.boss);
+      }
+    }
+
     // BOSS 标签跟随
     if (this.boss && this.boss.active && this.bossLabel) {
       this.bossLabel.setPosition(this.boss.x, this.boss.y - 52);
     }
 
-    // 首次接近BOSS触发提示、显示血条、封锁竞技场
-    if (this.boss && this.boss.active && !this.bossEncounterShown && Math.abs(this.player.x - this.boss.x) < 500) {
+    // 首次踏上金顶台地才触发BOSS遭遇（防止从石阶远程狙击）
+    if (this.boss && this.boss.active && !this.bossEncounterShown && this.player.x >= 4100) {
       this.bossEncounterShown = true;
       this.showLevelBanner('⚔️ 守金将军登场！集中精力！');
       this.showBossHPBar();
@@ -1162,8 +1356,9 @@ export class WudangScene extends Phaser.Scene {
         this.hud.setHint('→ 登上石阶，前往武当金顶');
       } else if (this.quizItems && this.quizItems.getChildren().some((s) => !s._used && Phaser.Math.Distance.Between(this.player.x, this.player.y, s.x, s.y) < 60)) {
         this.hud.setHint('📜 触碰答题卷获得智慧');
-      } else if (this.player.skills[ITEMS.SKILL_TAIJI]) {
-        this.hud.setHint('J 太极八卦弹  |  X 玄武护体  |  Z 朱雀');
+      } else if (this.player.skills[ITEMS.TAIJI_SWORD]) {
+        const wLabel = this.player.activeWeapon === 'sword' ? '⚔️太极剑' : '☯八卦掌';
+        this.hud.setHint(`${wLabel} · Q切换 | J攻 | X护体 | Z朱雀 | C黄龙`);
       } else {
         this.hud.setHint('J 攻击灵体  |  跳过断崖继续前进');
       }

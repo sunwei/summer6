@@ -73,6 +73,27 @@ const DEFS = {
     cooldownMsPerWisdom: -15,
     cooldownMsMin: 1500,
   },
+
+  // ─────────────── 太极八卦剑斩击（装备后强化J键攻击）──────────
+  TAIJI_SWORD: {
+    baseDamage: 55,         // 一击必杀小怪（小怪HP=20~25）
+    baseRange: 56,          // 更宽的斩击范围
+    baseHeight: 56,
+    rangePerWisdom: 0.5,
+    rangeMax: 110,
+  },
+
+  // ─────────────── 黄龙震地（C键，嵩山黄龙晶技能）──────────────
+  HUANGLONG_STRIKE: {
+    baseDamage: 45,
+    baseRange: 150,         // 前方纵深
+    baseHeight: 68,         // 波及高度
+    baseCooldownMs: 5000,
+    rangePerWisdom: 1.5,
+    rangeMax: 280,
+    cooldownMsPerWisdom: 0,
+    cooldownMsMin: 5000,
+  },
 };
 
 // Auto-derive string constants so callers do: weaponSystem.calc(WEAPONS.MELEE, …)

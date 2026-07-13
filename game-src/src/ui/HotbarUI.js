@@ -10,19 +10,20 @@ const SLOT_ITEMS = [
   ITEMS.CRYSTAL_QINGLONG,
   ITEMS.SKILL_TAIJI,
   ITEMS.SKILL_YIJINJING,
-  null,
+  ITEMS.TAIJI_SWORD,
   null,
 ];
 
 // Keyboard key shown in the bottom-right corner of each slot
 const SLOT_KEY_LABELS = {
   [ITEMS.CRYSTAL_ZHUQUE]:    'Z',
-  [ITEMS.CRYSTAL_HUANGLONG]: '',
+  [ITEMS.CRYSTAL_HUANGLONG]: 'C',   // 黄龙震地
   [ITEMS.CRYSTAL_BAIHU]:     '',
   [ITEMS.CRYSTAL_XUANWU]:    'X',  // 玄武护体（X键激活）
   [ITEMS.CRYSTAL_QINGLONG]:  '',
   [ITEMS.SKILL_TAIJI]:       '',   // 随J键自动触发八卦弹，无独立热键
-  [ITEMS.SKILL_YIJINJING]:   '',
+  [ITEMS.SKILL_YIJINJING]:   'V',   // 易筋经爆发
+  [ITEMS.TAIJI_SWORD]:       '⚔',  // 装备自动生效
 };
 
 const ITEM_TEXTURES = {
@@ -33,6 +34,7 @@ const ITEM_TEXTURES = {
   [ITEMS.CRYSTAL_QINGLONG]: 'crystal_yellow',
   [ITEMS.SKILL_TAIJI]: 'skill_taiji_icon',
   [ITEMS.SKILL_YIJINJING]: 'skill_yijin_icon',
+  [ITEMS.TAIJI_SWORD]: 'taiji_sword',
 };
 
 const ITEM_TINTS = {
@@ -43,6 +45,7 @@ const ITEM_TINTS = {
   [ITEMS.CRYSTAL_QINGLONG]: 0x66d9ff,
   [ITEMS.SKILL_TAIJI]: 0xffd700,
   [ITEMS.SKILL_YIJINJING]: 0xff9f43,
+  [ITEMS.TAIJI_SWORD]: 0xd8f0ff,
 };
 
 export class HotbarUI {
