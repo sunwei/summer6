@@ -401,59 +401,92 @@ export class WudangScene extends Phaser.Scene {
   }
 
   // ──────────────────────────────────────────────────────────
-  //  普通敌人
+  //  普通敌人（动态生成池，最多3个同屏）
   // ──────────────────────────────────────────────────────────
 
   createEnemies() {
     this.enemies = this.physics.add.group();
     this.enemyProjectiles = this.physics.add.group({ allowGravity: false });
+    this.maxActiveEnemies = 3;
+    this.lastSpawnTime = 0;
 
-    // 近攻灵体（标准）
-    const spawnMelee = (x, y, minX, maxX) => {
-      const e = this.enemies.create(x, y, 'enemy_spirit');
-      e.body.setSize(18, 34); e.body.setOffset(7, 10);
-      e.setCollideWorldBounds(true);
-      e.patrolMinX = minX; e.patrolMaxX = maxX; e.patrolDirection = 1;
-      e.hp = 40; e.patrolSpeed = 55; e.contactDamage = 10;
-      e.setVelocityX(55);
-      return e;
-    };
+    // 18个小怪出生点，随玩家推进动态激活
+    // type: 'melee'=近攻灵体  'heavy'=重装近攻(红)  'ranged'=远攻射手(紫)
+    this.enemySpawnPool = [
+      // ── 区域1：山脚 (x 300~750) ──
+      { x: 380,  y: 400, minX: 330,  maxX: 440,  type: 'melee',  spawned: false },
+      { x: 540,  y: 400, minX: 480,  maxX: 600,  type: 'ranged', spawned: false },
+      { x: 700,  y: 400, minX: 640,  maxX: 760,  type: 'heavy',  spawned: false },
+      // ── 区域2：中段跳台 (x 850~1450) ──
+      { x: 870,  y: 160, minX: 850,  maxX: 960,  type: 'melee',  spawned: false },
+      { x: 1140, y: 250, minX: 1100, maxX: 1240, type: 'ranged', spawned: false },
+      { x: 1380, y: 190, minX: 1350, maxX: 1460, type: 'heavy',  spawned: false },
+      // ── 区域3：第二地面段 (x 1800~2300) ──
+      { x: 1870, y: 400, minX: 1820, maxX: 1940, type: 'ranged', spawned: false },
+      { x: 1970, y: 300, minX: 1900, maxX: 2040, type: 'melee',  spawned: false },
+      { x: 2160, y: 220, minX: 2100, maxX: 2280, type: 'heavy',  spawned: false },
+      // ── 区域4：爬升踏台 (x 2300~2900) ──
+      { x: 2360, y: 400, minX: 2300, maxX: 2430, type: 'melee',  spawned: false },
+      { x: 2660, y: 192, minX: 2620, maxX: 2750, type: 'ranged', spawned: false },
+      { x: 2840, y: 120, minX: 2820, maxX: 2940, type: 'heavy',  spawned: false },
+      // ── 区域5：石阶前通道 (x 2900~3250) ──
+      { x: 2990, y: 400, minX: 2940, maxX: 3060, type: 'melee',  spawned: false },
+      { x: 3080, y: 400, minX: 3030, maxX: 3150, type: 'ranged', spawned: false },
+      { x: 3180, y: 400, minX: 3120, maxX: 3220, type: 'heavy',  spawned: false },
+      // ── 区域6：金顶石阶守卫 (x 3250~4100) ──
+      { x: 3290, y: 360, minX: 3250, maxX: 3340, type: 'heavy',  spawned: false },
+      { x: 3590, y: 280, minX: 3550, maxX: 3640, type: 'ranged', spawned: false },
+      { x: 3890, y: 200, minX: 3850, maxX: 3940, type: 'melee',  spawned: false },
+    ];
+  }
 
-    // 重装近攻（血厚、快速、伤高）
-    const spawnHeavy = (x, y, minX, maxX) => {
-      const e = this.enemies.create(x, y, 'enemy_spirit');
-      e.body.setSize(18, 36); e.body.setOffset(7, 10);
-      e.setCollideWorldBounds(true);
-      e.patrolMinX = minX; e.patrolMaxX = maxX; e.patrolDirection = 1;
+  // 根据出生点数据生成一个敌人
+  spawnEnemyFromData(data) {
+    // 生成闪光特效
+    const flash = this.add.circle(data.x, data.y, 20, 0xaad8ff, 0.55).setDepth(49);
+    this.tweens.add({ targets: flash, alpha: 0, scale: 2.6, duration: 340, onComplete: () => flash.destroy() });
+
+    const e = this.enemies.create(data.x, data.y, 'enemy_spirit');
+    e.body.setSize(18, 34); e.body.setOffset(7, 10);
+    e.setCollideWorldBounds(true);
+    e.patrolMinX = data.minX; e.patrolMaxX = data.maxX;
+    e.patrolDirection = 1;
+
+    if (data.type === 'heavy') {
       e.hp = 50; e.patrolSpeed = 70; e.contactDamage = 18; e.isHeavy = true;
-      e.setTint(0xff3300); e.setScale(1.18);
-      e.setVelocityX(70);
-      return e;
-    };
-
-    // 远攻灵体（远距离射击）
-    const spawnRanged = (x, y, minX, maxX) => {
-      const e = this.enemies.create(x, y, 'enemy_spirit');
-      e.body.setSize(18, 34); e.body.setOffset(7, 10);
-      e.setCollideWorldBounds(true);
-      e.patrolMinX = minX; e.patrolMaxX = maxX; e.patrolDirection = 1;
+      e.setTint(0xff3300); e.setScale(1.18); e.setVelocityX(70);
+    } else if (data.type === 'ranged') {
       e.hp = 30; e.patrolSpeed = 40; e.contactDamage = 8; e.isRanged = true;
       e.lastShootTime = 0; e.shootInterval = 2800;
-      e.setTint(0x8833ff);
-      e.setVelocityX(40);
-      return e;
-    };
+      e.setTint(0x8833ff); e.setVelocityX(40);
+    } else {
+      e.hp = 40; e.patrolSpeed = 55; e.contactDamage = 10; e.setVelocityX(55);
+    }
+    // 平台碰撞需要注册（group已有collider，新成员自动继承）
+    return e;
+  }
 
-    // 山脚/中段
-    spawnMelee(360, 300, 300, 430);
-    spawnRanged(750, 218, 600, 860);   // 中段平台远攻
-    spawnHeavy(1180, 250, 1080, 1240);
-    spawnRanged(2190, 210, 2100, 2280);
+  // 动态生成逻辑（每帧调用，维持最多3个同屏）
+  updateEnemySpawns() {
+    if (this.bossDefeated || this.levelFinished) return;
+    const now = this.time.now;
+    if (now - this.lastSpawnTime < 1200) return; // 相邻生成最短1.2秒间隔
 
-    // 金顶石阶守卫
-    spawnHeavy(3290, 350, 3250, 3340);
-    spawnRanged(3590, 270, 3550, 3640);
-    spawnMelee(3890, 190, 3850, 3940);
+    const activeCount = this.enemies.getChildren().filter(e => e.active && !e.isBoss).length;
+    if (activeCount >= this.maxActiveEnemies) return;
+
+    // 找最近的、在玩家前方且未生成的出生点
+    const next = this.enemySpawnPool.find(s =>
+      !s.spawned &&
+      s.x >= this.player.x - 180 &&   // 身后不超过180px
+      s.x <= this.player.x + 520       // 前方最多520px
+    );
+
+    if (next) {
+      next.spawned = true;
+      this.lastSpawnTime = now;
+      this.spawnEnemyFromData(next);
+    }
   }
 
   // ──────────────────────────────────────────────────────────
@@ -1238,6 +1271,9 @@ export class WudangScene extends Phaser.Scene {
     this.player.update();
 
     const nearNpc = this.npc.update(this.player);
+
+    // 动态生成小怪（最多3个同屏）
+    this.updateEnemySpawns();
 
     // 所有敌人（含BOSS）巡逻 / 远攻 AI
     this.enemies.getChildren().forEach((enemy) => {

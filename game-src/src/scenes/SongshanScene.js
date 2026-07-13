@@ -324,58 +324,89 @@ export class SongshanScene extends Phaser.Scene {
   }
 
   // ──────────────────────────────────────────────────────────
-  //  普通敌人（少林武僧）
+  //  普通敌人（少林武僧，动态生成池，最多3个同屏）
   // ──────────────────────────────────────────────────────────
 
   createEnemies() {
     this.enemies = this.physics.add.group();
     this.enemyProjectiles = this.physics.add.group({ allowGravity: false });
+    this.maxActiveEnemies = 3;
+    this.lastSpawnTime = 0;
 
-    // 近攻武僧（标准）
-    const spawnMelee = (x, y, minX, maxX) => {
-      const e = this.enemies.create(x, y, 'monk_enemy');
-      e.body.setSize(18, 34); e.body.setOffset(7, 10);
-      e.setCollideWorldBounds(true);
-      e.patrolMinX = minX; e.patrolMaxX = maxX; e.patrolDirection = 1;
-      e.hp = 40; e.patrolSpeed = 60; e.contactDamage = 10;
-      e.setVelocityX(60);
-      return e;
-    };
+    // 18个小怪出生点，随玩家推进动态激活
+    // type: 'melee'=标准近攻  'heavy'=重装近攻(红)  'ranged'=远攻投掷(蓝)
+    this.enemySpawnPool = [
+      // ── 区域1：山脚 (x 300~750) ──
+      { x: 380,  y: 400, minX: 330,  maxX: 450,  type: 'melee',  spawned: false },
+      { x: 540,  y: 400, minX: 480,  maxX: 600,  type: 'ranged', spawned: false },
+      { x: 700,  y: 400, minX: 640,  maxX: 760,  type: 'heavy',  spawned: false },
+      // ── 区域2：跳台区 (x 900~1500) ──
+      { x: 920,  y: 180, minX: 900,  maxX: 1000, type: 'melee',  spawned: false },
+      { x: 1180, y: 270, minX: 1150, maxX: 1280, type: 'ranged', spawned: false },
+      { x: 1420, y: 210, minX: 1400, maxX: 1510, type: 'heavy',  spawned: false },
+      // ── 区域3：第二地面段 (x 1800~2300) ──
+      { x: 1870, y: 400, minX: 1820, maxX: 1950, type: 'ranged', spawned: false },
+      { x: 1970, y: 310, minX: 1900, maxX: 2040, type: 'melee',  spawned: false },
+      { x: 2160, y: 250, minX: 2100, maxX: 2280, type: 'heavy',  spawned: false },
+      // ── 区域4：爬升踏台 (x 2300~2850) ──
+      { x: 2360, y: 400, minX: 2300, maxX: 2440, type: 'melee',  spawned: false },
+      { x: 2660, y: 200, minX: 2640, maxX: 2760, type: 'ranged', spawned: false },
+      { x: 2850, y: 200, minX: 2810, maxX: 2940, type: 'heavy',  spawned: false },
+      // ── 区域5：内殿通道前 (x 2950~3200) ──
+      { x: 2980, y: 400, minX: 2940, maxX: 3060, type: 'melee',  spawned: false },
+      { x: 3070, y: 400, minX: 3020, maxX: 3130, type: 'ranged', spawned: false },
+      { x: 3160, y: 400, minX: 3110, maxX: 3200, type: 'heavy',  spawned: false },
+      // ── 区域6：石阶守卫 (x 3200~4060) ──
+      { x: 3290, y: 360, minX: 3200, maxX: 3360, type: 'heavy',  spawned: false },
+      { x: 3590, y: 280, minX: 3520, maxX: 3660, type: 'ranged', spawned: false },
+      { x: 3890, y: 200, minX: 3840, maxX: 3940, type: 'melee',  spawned: false },
+    ];
+  }
 
-    // 重装近攻武僧（血厚、速快、伤高）
-    const spawnHeavy = (x, y, minX, maxX) => {
-      const e = this.enemies.create(x, y, 'monk_enemy');
-      e.body.setSize(18, 36); e.body.setOffset(7, 10);
-      e.setCollideWorldBounds(true);
-      e.patrolMinX = minX; e.patrolMaxX = maxX; e.patrolDirection = 1;
+  // 根据出生点数据生成一个武僧
+  spawnEnemyFromData(data) {
+    const flash = this.add.circle(data.x, data.y, 20, 0xffddaa, 0.55).setDepth(49);
+    this.tweens.add({ targets: flash, alpha: 0, scale: 2.6, duration: 340, onComplete: () => flash.destroy() });
+
+    const e = this.enemies.create(data.x, data.y, 'monk_enemy');
+    e.body.setSize(18, 34); e.body.setOffset(7, 10);
+    e.setCollideWorldBounds(true);
+    e.patrolMinX = data.minX; e.patrolMaxX = data.maxX;
+    e.patrolDirection = 1;
+
+    if (data.type === 'heavy') {
       e.hp = 50; e.patrolSpeed = 72; e.contactDamage = 18; e.isHeavy = true;
-      e.setTint(0xff3300); e.setScale(1.18);
-      e.setVelocityX(72);
-      return e;
-    };
-
-    // 远攻武僧（投掷暗器）
-    const spawnRanged = (x, y, minX, maxX) => {
-      const e = this.enemies.create(x, y, 'monk_enemy');
-      e.body.setSize(18, 34); e.body.setOffset(7, 10);
-      e.setCollideWorldBounds(true);
-      e.patrolMinX = minX; e.patrolMaxX = maxX; e.patrolDirection = 1;
+      e.setTint(0xff3300); e.setScale(1.18); e.setVelocityX(72);
+    } else if (data.type === 'ranged') {
       e.hp = 30; e.patrolSpeed = 42; e.contactDamage = 8; e.isRanged = true;
       e.lastShootTime = 0; e.shootInterval = 2800;
-      e.setTint(0x0099ff);
-      e.setVelocityX(42);
-      return e;
-    };
+      e.setTint(0x0099ff); e.setVelocityX(42);
+    } else {
+      e.hp = 40; e.patrolSpeed = 60; e.contactDamage = 10; e.setVelocityX(60);
+    }
+    return e;
+  }
 
-    spawnMelee(360, 300, 300, 450);
-    spawnRanged(730, 228, 600, 820);   // 中段平台远攻
-    spawnHeavy(1180, 260, 1080, 1300);
-    spawnRanged(2190, 250, 2100, 2300);
+  // 动态生成逻辑（每帧调用，维持最多3个同屏）
+  updateEnemySpawns() {
+    if (this.bossDefeated || this.levelFinished) return;
+    const now = this.time.now;
+    if (now - this.lastSpawnTime < 1200) return;
 
-    // 石阶守卫
-    spawnHeavy(3290, 350, 3200, 3350);
-    spawnRanged(3590, 270, 3520, 3670);
-    spawnMelee(3890, 190, 3840, 3940);
+    const activeCount = this.enemies.getChildren().filter(e => e.active && !e.isBoss).length;
+    if (activeCount >= this.maxActiveEnemies) return;
+
+    const next = this.enemySpawnPool.find(s =>
+      !s.spawned &&
+      s.x >= this.player.x - 180 &&
+      s.x <= this.player.x + 520
+    );
+
+    if (next) {
+      next.spawned = true;
+      this.lastSpawnTime = now;
+      this.spawnEnemyFromData(next);
+    }
   }
 
   // ──────────────────────────────────────────────────────────
@@ -937,6 +968,9 @@ export class SongshanScene extends Phaser.Scene {
   update() {
     this.player.update();
     const nearNpc = this.npc.update(this.player);
+
+    // 动态生成小怪（最多3个同屏）
+    this.updateEnemySpawns();
 
     this.enemies.getChildren().forEach((enemy) => {
       if (!enemy.active) return;
