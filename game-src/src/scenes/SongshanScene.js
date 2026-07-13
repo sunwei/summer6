@@ -55,6 +55,9 @@ export class SongshanScene extends Phaser.Scene {
     this.player.syncSkills(skillSystem.getInventory());
     this.physics.add.collider(this.player, this.platforms);
 
+    // 重生点初始在山门口，与方丈对话后更新
+    this.respawnPoint = { x: 80, y: 390 };
+
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
 
     this.createEnemies();
@@ -726,6 +729,9 @@ export class SongshanScene extends Phaser.Scene {
       if (skillSystem.collect(ITEMS.SKILL_YIJINJING)) {
         this.showLevelBanner('💪 易筋经已习得！→ 前往内殿');
       }
+      // 与方丈对话完毕，设置新重生点
+      this.respawnPoint = { x: 2820, y: 390 };
+      this.showCheckpointBeacon(2820, 390);
     });
 
     this.portalGlow = this.add.ellipse(5080, 106, 40, 76, COLORS.TEAL, 0.18).setVisible(false);
@@ -929,6 +935,24 @@ export class SongshanScene extends Phaser.Scene {
     }
   }
 
+  // 在重生点位置显示光标信标
+  showCheckpointBeacon(x, y) {
+    // 通知横幅（延迟避免与习得技能横幅重叠）
+    this.time.delayedCall(400, () => {
+      this.showLevelBanner('⛳ 新重生点已设置！死亡后在此处复活');
+    });
+    // 金色光柱
+    const beam = this.add.rectangle(x, y - 60, 10, 120, 0xffd700, 0.55).setDepth(48);
+    this.tweens.add({ targets: beam, alpha: 0, scaleY: 0.2, y: y - 100, duration: 1800, ease: 'Sine.easeIn', onComplete: () => beam.destroy() });
+    // 扩散光环
+    const ring = this.add.circle(x, y, 8, 0xffd700, 0).setStrokeStyle(3, 0xffe066, 0.9).setDepth(48);
+    this.tweens.add({ targets: ring, scaleX: 6, scaleY: 6, alpha: 0, duration: 1200, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+    // 常驻小标记（绿色圆点+旗帜图标提示此处可复活）
+    const dot = this.add.circle(x, y - 2, 5, 0x66ff88, 0.9).setDepth(48);
+    const dotLabel = this.add.text(x, y - 18, '⛳', { fontSize: '14px' }).setOrigin(0.5).setDepth(49);
+    this.tweens.add({ targets: [dot, dotLabel], alpha: { from: 1, to: 0.3 }, duration: 900, yoyo: true, repeat: -1 });
+  }
+
   // ──────────────────────────────────────────────────────────
   //  复活 / 完关
   // ──────────────────────────────────────────────────────────
@@ -936,9 +960,13 @@ export class SongshanScene extends Phaser.Scene {
   respawnPlayer() {
     this.player.hp = this.player.maxHp;
     this.player.invulnerableUntil = this.time.now + 800;
-    this.player.setPosition(80, 390); this.player.setVelocity(0, 0);
+    this.player.setPosition(this.respawnPoint.x, this.respawnPoint.y);
+    this.player.setVelocity(0, 0);
     bus.emit(EVENTS.PLAYER_HURT, { hp: this.player.hp, maxHp: this.player.maxHp, wisdom: this.player.wisdomBonus, attack: this.player.getCurrentAttack() });
-    this.showLevelBanner('💨 气运受损，回到山脚！');
+    const msg = this.respawnPoint.x > 100
+      ? '💫 气运恢复，在方丈处重生！'
+      : '💨 气运受损，回到山门！';
+    this.showLevelBanner(msg);
   }
 
   finishLevel() {
