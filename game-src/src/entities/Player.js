@@ -35,11 +35,23 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.shieldActiveUntil = 0;
     this.shieldCooldownUntil = 0;
     this.huanglongCooldown = 0;   // 黄龙震地冷却
-    this.yijinjingCooldown = 0;   // 易筋经爆发冷却
+    this.yijinjingCooldown = 0;   // 易筋经冷却
+    this.yijinjingCharging = false;      // 正在蓄力中
+    this.yijinjingChargeStart = 0;       // 开始蓄力的时间戳
+    this.yijinjingActive = false;        // buff生效中
+    this.yijinjingActiveUntil = 0;       // buff到期时间
+    this.attackMultiplier = 1;           // 攻击力倍率（易筋经激活时=2）
+    this._yijinjingChargeVisual = null;  // 蓄力光圈
+    this._yijinjingAura = null;          // buff激活时的金色光环
     this.lastTrailTime = 0;
     this.skillCooldown = 0;
     this.guardRing = null;
-    this.activeWeapon = 'palm';   // 'palm'（太极八卦掌）或 'sword'（太极剑）
+    this.activeWeapon = 'palm';
+    this.swordCharging = false;       // J长按蓄力中
+    this.swordChargeStart = 0;
+    this.swordSpinFired = false;
+    this.swordSpinCooldown = 0;       // 旋转斩冷却到期时间
+    this._swordChargeVisual = null;
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -111,6 +123,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.guardRing.setVisible(this.isGuarding());
     }
 
+    // 易筋经 buff 光环跟随玩家
+    if (this._yijinjingAura && this._yijinjingAura.active) {
+      this._yijinjingAura.setPosition(this.x, this.y - 8);
+    }
+    // 太极旋斩蓄力光圈跟随（在 updateSwordCharge 里更新）
+    if (this._swordChargeVisual && this._swordChargeVisual.active) {
+      this._swordChargeVisual.setPosition(this.x, this.y - 6);
+    }
+
     if (this.isTalking) {
       this.state = PLAYER_STATES.TALKING;
       this.anims.stop();
@@ -119,8 +140,46 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       return;
     }
 
-    if (Phaser.Input.Keyboard.JustDown(this.keys.attack)) {
-      this.basicAttack();
+    // J key — 攻击
+    // 剑模式：短按=普通斩，长按1秒（冷却完毕）=太极旋斩
+    // 拳模式：短按=拳击+元气弹
+    {
+      const now = this.scene.time.now;
+      const attackJustDown = Phaser.Input.Keyboard.JustDown(this.keys.attack);
+      const attackJustUp   = Phaser.Input.Keyboard.JustUp(this.keys.attack);
+      const useSwordMode   = this.activeWeapon === 'sword' && this.skills[ITEMS.TAIJI_SWORD];
+
+      if (useSwordMode) {
+        // 开始蓄力
+        if (attackJustDown && !this.swordCharging && !this.isAttacking) {
+          this.swordCharging = true;
+          this.swordSpinFired = false;
+          this.swordChargeStart = now;
+          if (now >= this.swordSpinCooldown) this.startSwordCharge();
+        }
+
+        if (this.swordCharging) {
+          const elapsed = now - this.swordChargeStart;
+          const canSpin = now >= this.swordSpinCooldown;
+          if (canSpin) this.updateSwordCharge(Math.min(elapsed / 1000, 1.0));
+
+          if (attackJustUp) {
+            // 短按松开 → 普通剑斩
+            this.swordCharging = false;
+            if (canSpin) this.cancelSwordCharge();
+            this.basicAttack();
+          } else if (canSpin && elapsed >= 1000 && !this.swordSpinFired) {
+            // 满1秒 → 太极旋斩
+            this.swordSpinFired = true;
+            this.swordCharging = false;
+            this.cancelSwordCharge();
+            this.activateSwordSpin();
+          }
+        }
+      } else {
+        // 拳模式
+        if (attackJustDown) this.basicAttack();
+      }
     }
 
     // Q key — 武器切换（持有太极剑后可用）
@@ -144,12 +203,36 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.activateHuanglongStrike();
     }
 
-    // V key — 易筋经爆发
-    if (this.skills[ITEMS.SKILL_YIJINJING] && Phaser.Input.Keyboard.JustDown(this.keys.skill_yijinjing)) {
-      this.activateYijinjing();
+    // V key — 易筋经（长按1秒蓄力，松手前取消，满1秒自动激活，攻击力x2持续6秒）
+    if (this.skills[ITEMS.SKILL_YIJINJING]) {
+      const now = this.scene.time.now;
+      const vDown = this.keys.skill_yijinjing.isDown;
+
+      // 触发蓄力：未蓄力、未激活、冷却完毕、非对话
+      if (vDown && !this.isTalking && !this.yijinjingCharging && !this.yijinjingActive
+          && now >= this.yijinjingCooldown) {
+        this.yijinjingCharging = true;
+        this.yijinjingChargeStart = now;
+        this.startYijinjingCharge();
+      }
+
+      if (this.yijinjingCharging) {
+        const elapsed = now - this.yijinjingChargeStart;
+        const progress = Math.min(elapsed / 1000, 1.0);
+        this.updateYijinjingCharge(progress);
+
+        if (!vDown) {
+          // 松手未满1秒 → 取消
+          this.cancelYijinjingCharge();
+        } else if (elapsed >= 1000) {
+          // 蓄力满1秒 → 激活
+          this.activateYijinjing();
+        }
+      }
     }
 
     if (!this.isAttacking) {
+      // 蓄力中也可移动（swordCharging / yijinjingCharging 均不设 isAttacking）
       this.handleMovement();
     }
 
@@ -225,7 +308,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.isAttacking = true;
     this.nextAttackTime = this.scene.time.now + 280;
     this.anims.stop();
-    this.setVelocityX(0);
+    // 剑模式短按时保留移动惯性（蓄力中松开不停步）
+    if (!this.swordCharging) this.setVelocityX(0);
     this.setTexture('player_attack');
     sfx.play('attack');
 
@@ -233,6 +317,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const useSword = this.activeWeapon === 'sword' && this.skills[ITEMS.TAIJI_SWORD];
     const weaponKey = useSword ? WEAPONS.TAIJI_SWORD : WEAPONS.MELEE;
     const ms = weaponSystem.calc(weaponKey, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus });
+    const finalDamage = Math.round(ms.damage * this.attackMultiplier);
     const hitboxX = this.x + (this.facingRight ? ms.range : -ms.range);
     const hitbox = this.scene.add.zone(hitboxX, this.y - 4, ms.range * 2, ms.height);
     this.scene.physics.add.existing(hitbox);
@@ -242,7 +327,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.scene.enemies) {
       this.scene.physics.world.overlap(hitbox, this.scene.enemies, (_zone, enemy) => {
         if (this.scene.damageEnemy) {
-          this.scene.damageEnemy(enemy, ms.damage);
+          this.scene.damageEnemy(enemy, finalDamage);
           return;
         }
         this.scene.defeatEnemy(enemy);
@@ -278,6 +363,108 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     });
   }
 
+  // ── 太极旋斩（剑模式长按1秒）──────────────────────────────
+
+  // 开始蓄力：生成光圈
+  startSwordCharge() {
+    if (this._swordChargeVisual) this._swordChargeVisual.destroy();
+    const scene = this.scene;
+    const container = scene.add.container(this.x, this.y - 6);
+    container.setDepth(this.depth + 1);
+    this._swordChargeOuter = scene.add.circle(0, 0, 8, 0xffd700, 0).setStrokeStyle(3, 0xffd700, 0.85);
+    this._swordChargeInner = scene.add.circle(0, 0, 4, 0xffffff, 0.3);
+    container.add([this._swordChargeInner, this._swordChargeOuter]);
+    this._swordChargeVisual = container;
+  }
+
+  // 每帧更新蓄力光圈（progress: 0~1）
+  updateSwordCharge(progress) {
+    if (!this._swordChargeVisual || !this._swordChargeVisual.active) return;
+    const r = 8 + progress * 30;
+    this._swordChargeOuter.setRadius(r).setAlpha(0.5 + progress * 0.5);
+    this._swordChargeInner.setRadius(3 + progress * 9).setAlpha(progress * 0.75);
+    if (progress >= 0.85) {
+      this._swordChargeVisual.setAlpha(0.55 + Math.sin(Date.now() * 0.024) * 0.45);
+    }
+  }
+
+  // 取消蓄力（松手 / 受击）
+  cancelSwordCharge() {
+    this.swordCharging = false;
+    if (this._swordChargeVisual) {
+      const cv = this._swordChargeVisual;
+      this._swordChargeVisual = null;
+      this.scene.tweens.add({
+        targets: cv, alpha: 0, duration: 160,
+        onComplete: () => { if (cv && cv.active) cv.destroy(); },
+      });
+    }
+  }
+
+  // 太极旋斩（长按1秒后触发）
+  activateSwordSpin() {
+    if (this.isAttacking || this.isTalking) return;
+    this.isAttacking = true;
+    this.swordSpinCooldown = this.scene.time.now + 3000;
+    this.setTexture('player_attack');
+    sfx.play('attack');
+
+    const scene = this.scene;
+    const spinRadius = 80;
+    const spinDamage = Math.round(70 * this.attackMultiplier); // 旋转斩伤害（x2，可叠加易筋经buff）
+
+    // 提示文字
+    const notice = scene.add.text(this.x, this.y - 62, '⚔️ 太极旋斩！', {
+      fontSize: '17px', color: '#ffd700', stroke: '#000000', strokeThickness: 3,
+      backgroundColor: '#00000088', padding: { x: 6, y: 3 },
+    }).setOrigin(0.5).setDepth(500);
+    scene.tweens.add({ targets: notice, alpha: 0, y: notice.y - 28, duration: 900, onComplete: () => notice.destroy() });
+
+    // 扩散冲击环
+    const ring1 = scene.add.circle(this.x, this.y - 8, 8, 0xffd700, 0)
+      .setStrokeStyle(4, 0xffd700, 0.95).setDepth(this.depth + 2);
+    scene.tweens.add({ targets: ring1, scale: { from: 0.6, to: spinRadius / 8 * 1.1 }, alpha: 0, duration: 480, ease: 'Quad.easeOut', onComplete: () => ring1.destroy() });
+
+    const ring2 = scene.add.circle(this.x, this.y - 8, 6, 0xffffff, 0)
+      .setStrokeStyle(2, 0xffd700, 0.7).setDepth(this.depth + 2);
+    scene.tweens.add({ targets: ring2, scale: { from: 1, to: spinRadius / 6 * 1.4 }, alpha: 0, duration: 620, ease: 'Cubic.easeOut', onComplete: () => ring2.destroy() });
+
+    // 8道旋转剑气
+    const slashCount = 8;
+    for (let i = 0; i < slashCount; i++) {
+      const angle = (i / slashCount) * Math.PI * 2;
+      const delay = (i / slashCount) * 350;
+      scene.time.delayedCall(delay, () => {
+        if (!this.active) return;
+        const sx = this.x + Math.cos(angle) * spinRadius * 0.55;
+        const sy = (this.y - 8) + Math.sin(angle) * spinRadius * 0.45;
+        const slash = scene.add.rectangle(sx, sy, 40, 7, 0xffd700, 0.92)
+          .setDepth(this.depth + 3).setRotation(angle);
+        const glow = scene.add.rectangle(sx, sy, 52, 12, 0xffffff, 0.35)
+          .setDepth(this.depth + 2).setRotation(angle);
+        scene.tweens.add({ targets: [slash, glow], alpha: 0, scaleX: 2.2, scaleY: 0.3, duration: 230, ease: 'Quad.easeOut', onComplete: () => { slash.destroy(); glow.destroy(); } });
+      });
+    }
+
+    // 判断伤害（100ms后，覆盖整个旋转范围）
+    scene.time.delayedCall(100, () => {
+      if (!scene || !scene.enemies) return;
+      scene.enemies.getChildren().forEach(enemy => {
+        if (!enemy.active) return;
+        const dist = Phaser.Math.Distance.Between(this.x, this.y, enemy.x, enemy.y);
+        if (dist <= spinRadius + 16) {
+          if (scene.damageEnemy) scene.damageEnemy(enemy, spinDamage);
+        }
+      });
+    });
+
+    // 轻微震屏
+    scene.cameras.main.shake(140, 0.006);
+
+    // 结束攻击状态
+    scene.time.delayedCall(520, () => { this.isAttacking = false; });
+  }
+
   // 太极八卦剑斩击光效
   showSwordSlash() {
     const scene = this.scene;
@@ -302,7 +489,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const orb = scene.physics.add.image(this.x + dir * 24, this.y - 12, 'bagua_orb');
     orb.setDepth(this.depth + 1);
     orb.setScale(os.scale);
-    orb.damage = os.damage;
+    orb.damage = Math.round(os.damage * this.attackMultiplier);
     sfx.play('bagua_shoot');
     if (scene.playerBullets) scene.playerBullets.add(orb);
     orb.body.setAllowGravity(false);
@@ -331,7 +518,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       const zs = weaponSystem.calc(WEAPONS.ZHUQUE, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus });
       this.skillCooldown = this.scene.time.now + zs.cooldownMs;
       bus.emit(EVENTS.SKILL_COOLDOWN, { itemKey: ITEMS.CRYSTAL_ZHUQUE, duration: zs.cooldownMs });
-      bus.emit(EVENTS.CRYSTAL_SKILL, { type: 'zhuque', x: this.x, y: this.y, range: zs.range, damage: zs.damage });
+      bus.emit(EVENTS.CRYSTAL_SKILL, {
+        type: 'zhuque', x: this.x, y: this.y, range: zs.range,
+        damage: Math.round(zs.damage * this.attackMultiplier),
+      });
       sfx.play('skill_zhuque');
     }
   }
@@ -376,24 +566,120 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       type: 'huanglong',
       x: this.x, y: this.y,
       dir: this.facingRight ? 1 : -1,
-      range: hs.range, height: hs.height, damage: hs.damage,
+      range: hs.range, height: hs.height,
+      damage: Math.round(hs.damage * this.attackMultiplier),
     });
     sfx.play('attack');
   }
 
-  // 易筋经爆发（V键）
+  // 易筋经——长按1秒激活，全攻击x2持续6秒
   activateYijinjing() {
-    if (this.scene.time.now < this.yijinjingCooldown) return;
+    this.yijinjingCharging = false;
+    // 清理蓄力光圈
+    if (this._yijinjingChargeVisual) {
+      this._yijinjingChargeVisual.destroy();
+      this._yijinjingChargeVisual = null;
+    }
+
+    const scene = this.scene;
+    const now = scene.time.now;
+
     const ys = weaponSystem.calc(WEAPONS.YIJINJING, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus });
-    this.yijinjingCooldown = this.scene.time.now + ys.cooldownMs;
+    this.yijinjingCooldown = now + ys.cooldownMs;
     bus.emit(EVENTS.SKILL_COOLDOWN, { itemKey: ITEMS.SKILL_YIJINJING, duration: ys.cooldownMs });
-    bus.emit(EVENTS.CRYSTAL_SKILL, {
-      type: 'yijinjing',
-      x: this.x, y: this.y,
-      dir: this.facingRight ? 1 : -1,
-      range: ys.range, damage: ys.damage,
-    });
+
+    // 激活 x2 攻击力 buff（持续6秒）
+    const buffDuration = 6000;
+    this.yijinjingActive = true;
+    this.yijinjingActiveUntil = now + buffDuration;
+    this.attackMultiplier = 2;
+
     sfx.play('attack');
+
+    // 激活爆发特效
+    const burst = scene.add.circle(this.x, this.y - 8, 10, 0xff9f43, 0.85).setDepth(this.depth + 2);
+    scene.tweens.add({ targets: burst, scale: { from: 0.4, to: 5.5 }, alpha: 0, duration: 550, ease: 'Cubic.easeOut', onComplete: () => burst.destroy() });
+    const ring = scene.add.circle(this.x, this.y - 8, 10, 0xff9f43, 0)
+      .setStrokeStyle(4, 0xffd700, 1).setDepth(this.depth + 2);
+    scene.tweens.add({ targets: ring, scale: { from: 0.8, to: 6.5 }, alpha: 0, duration: 680, ease: 'Cubic.easeOut', onComplete: () => ring.destroy() });
+
+    // 激活提示文字
+    const notice = scene.add.text(this.x, this.y - 58, '💪 易筋经爆发！攻击力x2！', {
+      fontSize: '17px', color: '#ffd700', stroke: '#000000', strokeThickness: 3,
+      backgroundColor: '#00000088', padding: { x: 6, y: 3 },
+    }).setOrigin(0.5).setDepth(500);
+    scene.tweens.add({ targets: notice, alpha: 0, y: notice.y - 30, duration: 1200, onComplete: () => notice.destroy() });
+
+    // 持续期间的金色光环
+    const aura = scene.add.circle(this.x, this.y - 8, 28, 0xff9f43, 0.15)
+      .setStrokeStyle(2, 0xffd700, 0.9).setDepth(this.depth);
+    this._yijinjingAura = aura;
+    const auraTween = scene.tweens.add({
+      targets: aura, scale: { from: 1.0, to: 1.22 }, alpha: { from: 0.55, to: 0.85 },
+      duration: 380, yoyo: true, repeat: -1,
+    });
+
+    // 更新 HUD 显示（攻击力翻倍）
+    bus.emit(EVENTS.PLAYER_HURT, { hp: this.hp, maxHp: this.maxHp, wisdom: this.wisdomBonus, attack: this.getCurrentAttack() });
+
+    // buff 到期
+    scene.time.delayedCall(buffDuration, () => {
+      this.yijinjingActive = false;
+      this.attackMultiplier = 1;
+      auraTween.stop();
+      if (aura && aura.active) aura.destroy();
+      if (this._yijinjingAura === aura) this._yijinjingAura = null;
+
+      if (this.active) {
+        const endMsg = scene.add.text(this.x, this.y - 48, '易筋经效果结束', {
+          fontSize: '14px', color: '#ff9f43', stroke: '#000000', strokeThickness: 2,
+          backgroundColor: '#00000066', padding: { x: 5, y: 2 },
+        }).setOrigin(0.5).setDepth(500);
+        scene.tweens.add({ targets: endMsg, alpha: 0, y: endMsg.y - 20, duration: 900, onComplete: () => endMsg.destroy() });
+      }
+      bus.emit(EVENTS.PLAYER_HURT, { hp: this.hp, maxHp: this.maxHp, wisdom: this.wisdomBonus, attack: this.getCurrentAttack() });
+    });
+  }
+
+  // 开始蓄力：创建蓄力光圈
+  startYijinjingCharge() {
+    if (this._yijinjingChargeVisual) this._yijinjingChargeVisual.destroy();
+    const scene = this.scene;
+    const container = scene.add.container(this.x, this.y - 6);
+    container.setDepth(this.depth + 1);
+    this._chargeOuter = scene.add.circle(0, 0, 10, 0xff9f43, 0).setStrokeStyle(3, 0xffd700, 0.9);
+    this._chargeInner = scene.add.circle(0, 0, 6, 0xffee44, 0.45);
+    container.add([this._chargeInner, this._chargeOuter]);
+    this._yijinjingChargeVisual = container;
+  }
+
+  // 每帧更新蓄力光圈大小（progress: 0~1）
+  updateYijinjingCharge(progress) {
+    if (!this._yijinjingChargeVisual) return;
+    this._yijinjingChargeVisual.setPosition(this.x, this.y - 6);
+    const r = 10 + progress * 30; // 10→40 px
+    this._chargeOuter.setRadius(r);
+    this._chargeOuter.setAlpha(0.5 + progress * 0.5);
+    this._chargeInner.setRadius(4 + progress * 10);
+    this._chargeInner.setAlpha(progress * 0.8);
+
+    // 即将蓄满时闪烁
+    if (progress >= 0.85) {
+      this._yijinjingChargeVisual.setAlpha(0.6 + Math.sin(Date.now() * 0.02) * 0.4);
+    }
+  }
+
+  // 取消蓄力（松手未满1秒）
+  cancelYijinjingCharge() {
+    this.yijinjingCharging = false;
+    if (this._yijinjingChargeVisual) {
+      const cv = this._yijinjingChargeVisual;
+      this._yijinjingChargeVisual = null;
+      this.scene.tweens.add({
+        targets: cv, alpha: 0, duration: 200,
+        onComplete: () => { if (cv.active) cv.destroy(); },
+      });
+    }
   }
 
   leaveTrailWhenRunning() {
@@ -438,6 +724,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setVelocity(sourceX < this.x ? 180 : -180, -220);
     sfx.play('player_hurt');
 
+    // 受击打断易筋经蓄力 & 太极旋斩蓄力
+    if (this.yijinjingCharging) {
+      this.cancelYijinjingCharge();
+    }
+    if (this.swordCharging) {
+      this.cancelSwordCharge();
+    }
+
     bus.emit(EVENTS.PLAYER_HURT, { hp: this.hp, maxHp: this.maxHp, wisdom: this.wisdomBonus, attack: this.getCurrentAttack() });
     this.scene.time.delayedCall(140, () => this.clearTint());
 
@@ -464,7 +758,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   getCurrentAttack() {
-    return weaponSystem.calc(WEAPONS.MELEE, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus }).damage;
+    const base = weaponSystem.calc(WEAPONS.MELEE, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus }).damage;
+    return Math.round(base * this.attackMultiplier);
   }
 
   flashGuardSuccess() {

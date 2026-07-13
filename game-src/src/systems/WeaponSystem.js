@@ -63,20 +63,20 @@ const DEFS = {
     cooldownMsMin: 4000,
   },
 
-  // ────── 易筋经爆发（少林寺关卡解锁后，预留接口）──────────
+  // ────── 易筋经（长按1秒蓄力，激活后全攻击x2持续6秒）──────────
   YIJINJING: {
     baseDamage: 20,
-    baseRange: 80,          // forward shockwave range
-    baseCooldownMs: 4000,
+    baseRange: 80,          // 激活时的起手爆发波范围（视觉用）
+    baseCooldownMs: 15000,  // 激活后15秒冷却（buff期间无法重新蓄力）
     rangePerWisdom: 1.0,
     rangeMax: 200,
     cooldownMsPerWisdom: -15,
-    cooldownMsMin: 1500,
+    cooldownMsMin: 10000,
   },
 
   // ─────────────── 太极八卦剑斩击（装备后强化J键攻击）──────────
   TAIJI_SWORD: {
-    baseDamage: 55,         // 一击必杀小怪（小怪HP=20~25）
+    baseDamage: 25,         // 2剑击败普通灵体/武僧（HP=40~50），BOSS上限25另行限制
     baseRange: 56,          // 更宽的斩击范围
     baseHeight: 56,
     rangePerWisdom: 0.5,
