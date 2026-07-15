@@ -22,6 +22,7 @@ export class MenuScene extends Phaser.Scene {
     this.createRouteMap();
     this.createCrystalRow();
     this.createStartButton();
+    this.createDevPanel();
 
     this.add
       .text(GAME_WIDTH / 2, GAME_HEIGHT - 28, '爸爸 + 小北 · 2026暑假', {
@@ -190,7 +191,7 @@ export class MenuScene extends Phaser.Scene {
       { label: '武当山',    done: !!collected[ITEMS.TAIJI_SWORD],    color: 0xffd700 },
       { label: '中岳\n嵩山',done: !!collected[ITEMS.SONGSHAN_COMPLETE], color: 0xff9900 },
       { label: '东岳\n泰山', done: false,                            color: 0x66d9ff },
-      { label: '西岳\n华山', done: false,                            color: 0xf0f6ff },
+      { label: '西岳\n华山', done: !!collected[ITEMS.HUASHAN_COMPLETE], color: 0xf0f6ff },
       { label: '北岳\n恒山', done: false,                            color: 0x7ef7c6 },
     ];
 
@@ -227,8 +228,10 @@ export class MenuScene extends Phaser.Scene {
     const collected = skillSystem.getInventory();
     const hasSword  = !!collected[ITEMS.TAIJI_SWORD];
     const songDone  = !!collected[ITEMS.SONGSHAN_COMPLETE];
+    const huaDone   = !!collected[ITEMS.HUASHAN_COMPLETE];
 
-    const label = songDone ? '▶ 继续旅程 (更多关卡开发中…)'
+    const label = huaDone ? '▶ 继续旅程 (更多关卡开发中…)'
+                : songDone ? '▶ 前往华山'
                 : hasSword ? '▶ 前往嵩山'
                 : '▶ 开始旅程';
 
@@ -243,9 +246,11 @@ export class MenuScene extends Phaser.Scene {
 
     button.on('pointerdown', () => {
       if (this.scene.isActive(SCENES.HUD)) this.scene.stop(SCENES.HUD);
-      if (songDone) {
+      if (huaDone) {
         // 更多关卡开发中 — 回到菜单或显示提示
         this.showComingSoon();
+      } else if (songDone) {
+        this.scene.start(SCENES.HUASHAN);
       } else if (hasSword) {
         this.scene.start(SCENES.SONGSHAN);
       } else {
@@ -263,5 +268,58 @@ export class MenuScene extends Phaser.Scene {
       stroke: '#000', strokeThickness: 6,
     }).setOrigin(0.5).setDepth(991);
     this.input.once('pointerdown', () => { bg.destroy(); msg.destroy(); });
+  }
+
+  // ──────────────────────────────────────────────────────────
+  //  🛠 开发模式：跳过前置流程，直接进入指定关卡测试
+  //  （自动补发该关卡所需的前置道具/技能，避免缺装备导致测试受限）
+  // ──────────────────────────────────────────────────────────
+
+  createDevPanel() {
+    const panelX = 10;
+    let panelY = 8;
+
+    const title = this.add.text(panelX, panelY, '🛠 开发测试模式', {
+      fontSize: '13px', color: '#ffaa00', backgroundColor: '#00000099', padding: { x: 6, y: 3 },
+    }).setDepth(999);
+    panelY += title.height + 4;
+
+    const jumps = [
+      {
+        label: '▶ 武当山（第一关）',
+        scene: SCENES.WUDANG,
+        unlock: [],
+      },
+      {
+        label: '▶ 嵩山（第二关）',
+        scene: SCENES.SONGSHAN,
+        unlock: [ITEMS.TAIJI_SWORD, ITEMS.SKILL_TAIJI, ITEMS.CRYSTAL_HUANGLONG],
+      },
+      {
+        label: '▶ 华山（第三关）',
+        scene: SCENES.HUASHAN,
+        unlock: [
+          ITEMS.TAIJI_SWORD, ITEMS.SKILL_TAIJI, ITEMS.CRYSTAL_HUANGLONG,
+          ITEMS.CHAN_STAFF, ITEMS.SKILL_YIJINJING, ITEMS.SONGSHAN_COMPLETE,
+        ],
+      },
+    ];
+
+    jumps.forEach((jump) => {
+      const btn = this.add.text(panelX, panelY, jump.label, {
+        fontSize: '14px', color: '#8fd9ff', backgroundColor: '#00000088', padding: { x: 6, y: 3 },
+      }).setDepth(999).setInteractive({ useHandCursor: true });
+
+      btn.on('pointerover', () => btn.setStyle({ color: '#ffffff', backgroundColor: '#1a3a55' }));
+      btn.on('pointerout',  () => btn.setStyle({ color: '#8fd9ff', backgroundColor: '#00000088' }));
+      btn.on('pointerdown', (pointer, x, y, event) => {
+        event.stopPropagation();
+        jump.unlock.forEach((key) => skillSystem.collect(key));
+        if (this.scene.isActive(SCENES.HUD)) this.scene.stop(SCENES.HUD);
+        this.scene.start(jump.scene);
+      });
+
+      panelY += btn.height + 4;
+    });
   }
 }

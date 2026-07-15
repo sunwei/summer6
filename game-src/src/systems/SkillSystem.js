@@ -13,7 +13,9 @@ export class SkillSystem {
       [ITEMS.SKILL_TAIJI]: false,
       [ITEMS.SKILL_YIJINJING]: false,
       [ITEMS.TAIJI_SWORD]: false,
+      [ITEMS.CHAN_STAFF]: false,
       [ITEMS.SONGSHAN_COMPLETE]: false,
+      [ITEMS.HUASHAN_COMPLETE]: false,
     };
   }
 

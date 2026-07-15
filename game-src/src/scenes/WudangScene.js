@@ -899,7 +899,7 @@ export class WudangScene extends Phaser.Scene {
       // 与真人对话完毕，设置新重生点
       this.respawnPoint = { x: 2820, y: 390 };
       this.showCheckpointBeacon(2820, 390);
-    });
+    }, '武当真人');
 
     // 传送门位于金顶末端（x=4680）
     this.portalGlow = this.add.ellipse(4680, 104, 40, 76, COLORS.TEAL, 0.18).setVisible(false);
@@ -1093,7 +1093,7 @@ export class WudangScene extends Phaser.Scene {
 
   handleBulletHit(bullet, enemy) {
     if (!bullet.active || !enemy.active) return;
-    // BUG修复：禁止从竞技场外远程狙击BOSS
+    // 禁止从竞技场外/山下远程狙击BOSS：必须实时站在竞技场内，攻击才生效
     if (enemy.isBoss && this.player.x < 4100) return;
     this.burstParticles(bullet.x, bullet.y, 8, 0x4488ff);
     const dmg = bullet.damage || 8;
@@ -1123,6 +1123,9 @@ export class WudangScene extends Phaser.Scene {
 
   damageEnemy(enemy, damage = 10) {
     if (!enemy || !enemy.active) return;
+    // 统一安全阀：无论拳脚/剑气/元气弹/技能AOE，玩家必须实时站在竞技场内才能伤到BOSS，
+    // 防止在场外/山下对BOSS挂机输出（BOSS无法主动下山追击，必须公平对等）。
+    if (enemy.isBoss && this.player.x < 4100) return;
     enemy.hp = typeof enemy.hp === 'number' ? enemy.hp : (enemy.isBoss ? 500 : 40);
     // BOSS 单次最大受伤 25，确保需要 20+ 下才能击败
     if (enemy.isBoss) damage = Math.min(damage, 25);
@@ -1305,6 +1308,18 @@ export class WudangScene extends Phaser.Scene {
     // 所有敌人（含BOSS）巡逻 / 远攻 AI
     this.enemies.getChildren().forEach((enemy) => {
       if (!enemy.active) return;
+
+      // 安全防护：无论冲锋/跳跃与否，BOSS 水平位置始终限制在竞技场范围内，
+      // 防止攻击动作把它甩出台地边缘、掉入石阶间的空隙无限坠落重生。
+      if (enemy.isBoss) {
+        if (enemy.x < enemy.patrolMinX) {
+          enemy.x = enemy.patrolMinX;
+          if (enemy.body.velocity.x < 0) enemy.setVelocityX(0);
+        } else if (enemy.x > enemy.patrolMaxX) {
+          enemy.x = enemy.patrolMaxX;
+          if (enemy.body.velocity.x > 0) enemy.setVelocityX(0);
+        }
+      }
 
       // 冲锋或跳跃中的BOSS不受巡逻逻辑打断
       if (enemy.isBoss && (enemy.isCharging || enemy.isJumping)) return;

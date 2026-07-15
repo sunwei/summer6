@@ -1,4 +1,4 @@
-// 嵩山关卡：少林寺 → 习易筋经 → 迎战禅杖僧王 → 开启传送门
+// 华山关卡：东峰(朝阳) → 南峰(落雁) → 西峰(莲花，习白虎裂空) → 北峰(云台) → 中峰(玉女，战白虎剑仙) → 开启传送门
 import * as Phaser from 'phaser';
 import { COLORS, GAME_HEIGHT, GAME_WIDTH, ITEMS, SCENES } from '../constants.js';
 import { Player } from '../entities/Player.js';
@@ -10,17 +10,17 @@ import { bus, EVENTS } from '../events.js';
 import { music } from '../systems/MusicSystem.js';
 import { sfx } from '../systems/SoundFX.js';
 
-const SONGSHAN_QUIZZES = [
-  { q: '嵩山位于中国哪个省份？',    choices: ['河南省', '湖北省', '山东省', '陕西省'], correct: 0 },
-  { q: '少林寺建于哪个朝代？',      choices: ['北魏', '唐朝', '宋朝', '明朝'],        correct: 0 },
-  { q: '易筋经相传由谁传承？',      choices: ['达摩祖师', '慧能禅师', '玄奘法师', '鉴真和尚'], correct: 0 },
-  { q: '嵩山是中国五岳中的哪岳？',  choices: ['中岳', '东岳', '西岳', '北岳'],        correct: 0 },
-  { q: '嵩山少林武术的核心理念是？', choices: ['禅武合一', '飞檐走壁', '隐身遁形', '以力服人'], correct: 0 },
+const HUASHAN_QUIZZES = [
+  { q: '华山位于中国哪个省份？',        choices: ['陕西省', '山西省', '河南省', '甘肃省'], correct: 0 },
+  { q: '华山是中国五岳中的哪岳？',      choices: ['西岳', '东岳', '南岳', '北岳'],        correct: 0 },
+  { q: '华山五峰中最高的是哪一峰？',    choices: ['南峰', '东峰', '西峰', '北峰'],        correct: 0 },
+  { q: '华山以何种地貌著称？',          choices: ['花岗岩险峰', '喀斯特溶洞', '丹霞地貌', '火山熔岩'], correct: 0 },
+  { q: '相传"华山论剑"出自哪部小说？', choices: ['射雕英雄传', '天龙八部', '笑傲江湖', '倚天屠龙记'], correct: 0 },
 ];
 
-export class SongshanScene extends Phaser.Scene {
+export class HuashanScene extends Phaser.Scene {
   constructor() {
-    super(SCENES.SONGSHAN);
+    super(SCENES.HUASHAN);
   }
 
   create() {
@@ -32,31 +32,31 @@ export class SongshanScene extends Phaser.Scene {
     this.boss = null;
     this.bossLabel = null;
     this.bossArenaWall = null;
-    this.awaitingStaffPickup = false;
-    this._musicTheme = 'songshan';
+    this.awaitingCrystalPickup = false;
+    this._musicTheme = 'huashan';
 
     if (this.scene.isActive(SCENES.HUD)) this.scene.stop(SCENES.HUD);
     this.scene.launch(SCENES.HUD);
     this.hud = this.scene.get(SCENES.HUD);
 
-    music.play('songshan');
+    music.play('huashan');
 
-    this.physics.world.setBounds(0, 0, 5200, 520);
+    this.physics.world.setBounds(0, 0, 6200, 520);
     const PLAY_H = GAME_HEIGHT - 80;
     this.cameras.main.setViewport(0, 0, GAME_WIDTH, PLAY_H);
-    this.cameras.main.setBounds(0, 0, 5200, PLAY_H);
+    this.cameras.main.setBounds(0, 0, 6200, PLAY_H);
 
     this.createBackground();
     this.createPlatforms();
     this.createDecorations();
-    this.createInnerSanctum();
+    this.createSummitZone();
     this.createParticles();
 
     this.player = new Player(this, 80, 390);
     this.player.syncSkills(skillSystem.getInventory());
     this.physics.add.collider(this.player, this.platforms);
 
-    // 重生点初始在山门口，与方丈对话后更新
+    // 重生点初始在东峰入口，与剑圣对话后更新
     this.respawnPoint = { x: 80, y: 390 };
 
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
@@ -72,7 +72,6 @@ export class SongshanScene extends Phaser.Scene {
     this.playerBullets = this.physics.add.group({ allowGravity: false });
     this.physics.add.overlap(this.playerBullets, this.enemies, this.handleBulletHit, null, this);
 
-    // 敌方弹幕与玩家碰撞
     if (this.enemyProjectiles) {
       this.physics.add.overlap(this.player, this.enemyProjectiles, this.handleEnemyProjectileHit, null, this);
     }
@@ -103,6 +102,9 @@ export class SongshanScene extends Phaser.Scene {
       } else if (type === 'yijinjing') {
         this.yijinjingBlast(x, y, dir, range, damage);
         this.showLevelBanner('💪 易筋经爆发！');
+      } else if (type === 'baihu') {
+        this.baihuStrike(x, y, dir, range, height, damage);
+        this.showLevelBanner('🐯 白虎裂空！');
       }
     };
 
@@ -114,11 +116,11 @@ export class SongshanScene extends Phaser.Scene {
       this.quizUI?.destroy();
     });
 
-    if (skillSystem.getInventory()[ITEMS.SKILL_YIJINJING]) {
+    if (skillSystem.getInventory()[ITEMS.CRYSTAL_BAIHU]) {
       this.npc.setCompleted(true);
     }
 
-    this.bossDefeated = !!skillSystem.getInventory()[ITEMS.SONGSHAN_COMPLETE];
+    this.bossDefeated = !!skillSystem.getInventory()[ITEMS.HUASHAN_COMPLETE];
     if (this.bossDefeated) {
       this.activatePortal(false);
     } else {
@@ -127,59 +129,59 @@ export class SongshanScene extends Phaser.Scene {
   }
 
   // ──────────────────────────────────────────────────────────
-  //  背景
+  //  背景（晨曦花岗岩群峰）
   // ──────────────────────────────────────────────────────────
 
   createBackground() {
-    // 白天石灰岩山峦背景
-    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT * 0.28, GAME_WIDTH, GAME_HEIGHT * 0.56, 0x1c2840, 1).setScrollFactor(0);
-    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT * 0.75, GAME_WIDTH, GAME_HEIGHT * 0.5, 0x283050, 1).setScrollFactor(0);
+    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT * 0.26, GAME_WIDTH, GAME_HEIGHT * 0.52, 0x2a2440, 1).setScrollFactor(0);
+    this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT * 0.75, GAME_WIDTH, GAME_HEIGHT * 0.5, 0x3a3050, 1).setScrollFactor(0);
 
     const far = this.add.graphics().setScrollFactor(0.1);
-    far.fillStyle(0x2a3040, 1);
+    far.fillStyle(0x4a4258, 1);
     far.beginPath();
-    far.moveTo(-100, 540); far.lineTo(80, 280); far.lineTo(220, 400); far.lineTo(430, 200);
-    far.lineTo(620, 380); far.lineTo(850, 240); far.lineTo(1100, 400); far.lineTo(1350, 210);
-    far.lineTo(1600, 380); far.lineTo(1850, 230); far.lineTo(2100, 400); far.lineTo(2400, 180);
-    far.lineTo(2700, 340); far.lineTo(3000, 160); far.lineTo(3400, 300); far.lineTo(3800, 150);
-    far.lineTo(4200, 290); far.lineTo(4400, 540); far.closePath(); far.fillPath();
+    far.moveTo(-100, 540); far.lineTo(100, 250); far.lineTo(260, 400); far.lineTo(480, 190);
+    far.lineTo(700, 380); far.lineTo(960, 210); far.lineTo(1220, 390); far.lineTo(1480, 180);
+    far.lineTo(1740, 380); far.lineTo(2000, 200); far.lineTo(2280, 390); far.lineTo(2560, 220);
+    far.lineTo(2860, 400); far.lineTo(3200, 180); far.lineTo(3600, 340); far.lineTo(4000, 200);
+    far.lineTo(4400, 380); far.lineTo(4800, 220); far.lineTo(5200, 380); far.lineTo(5600, 150);
+    far.lineTo(6000, 300); far.lineTo(6300, 540); far.closePath(); far.fillPath();
 
     const mid = this.add.graphics().setScrollFactor(0.3);
-    mid.fillStyle(0x3a4055, 1);
+    mid.fillStyle(0x625a78, 1);
     mid.beginPath();
-    mid.moveTo(-60, 540); mid.lineTo(100, 320); mid.lineTo(240, 440); mid.lineTo(470, 280);
+    mid.moveTo(-60, 540); mid.lineTo(120, 320); mid.lineTo(260, 440); mid.lineTo(480, 280);
     mid.lineTo(660, 440); mid.lineTo(900, 290); mid.lineTo(1130, 460); mid.lineTo(1380, 300);
     mid.lineTo(1600, 460); mid.lineTo(1860, 300); mid.lineTo(2120, 460); mid.lineTo(2400, 290);
     mid.lineTo(2680, 460); mid.lineTo(2960, 310); mid.lineTo(3200, 480); mid.lineTo(3500, 300);
-    mid.lineTo(3800, 460); far.lineTo(4200, 310); far.lineTo(4400, 540); far.closePath(); mid.fillPath();
+    mid.lineTo(3800, 460); mid.lineTo(4100, 300); mid.lineTo(4400, 460); mid.lineTo(4700, 280);
+    mid.lineTo(5000, 460); mid.lineTo(5300, 260); mid.lineTo(5600, 460); mid.lineTo(5900, 200);
+    mid.lineTo(6300, 400); mid.closePath(); mid.fillPath();
 
-    // 远景少林寺轮廓
-    mid.fillStyle(0x252d40, 1);
-    mid.fillRect(2400, 300, 14, 80); mid.fillRect(2490, 300, 14, 80);
-    mid.fillTriangle(2380, 310, 2524, 310, 2452, 272);
+    // 晨曦色带（东峰朝阳意象，随景深轻淡）
+    const dawn = this.add.rectangle(700, 120, 1400, 200, 0xff8a5c, 0.10).setScrollFactor(0.15);
+    this.tweens.add({ targets: dawn, alpha: { from: 0.06, to: 0.16 }, duration: 2600, yoyo: true, repeat: -1 });
 
-    // 近景树木（扩展至5400覆盖新Boss区域）
+    // 近景松林（扩展至6300px覆盖全部五峰）
     const near = this.add.graphics().setScrollFactor(0.6);
-    near.fillStyle(0x14281a, 1);
-    for (let x = -50; x < 5400; x += 65) {
-      near.fillTriangle(x, 540, x + 24, 430 - (x % 3) * 18, x + 48, 540);
-      near.fillTriangle(x + 18, 540, x + 44, 415 - (x % 4) * 16, x + 70, 540);
+    near.fillStyle(0x232038, 1);
+    for (let x = -50; x < 6300; x += 68) {
+      near.fillTriangle(x, 540, x + 25, 430 - (x % 3) * 18, x + 50, 540);
+      near.fillTriangle(x + 19, 540, x + 46, 412 - (x % 4) * 16, x + 73, 540);
     }
 
-    // 云
-    for (let i = 0; i < 8; i++) {
-      const cloud = this.add.container(Phaser.Math.Between(-100, 4200), Phaser.Math.Between(50, 160), [
-        this.add.ellipse(-22, 4, 48, 26, 0xffffff, 0.14),
-        this.add.ellipse(0, 0, 58, 32, 0xffffff, 0.14),
-        this.add.ellipse(26, 6, 44, 24, 0xffffff, 0.14),
+    for (let i = 0; i < 10; i++) {
+      const cloud = this.add.container(Phaser.Math.Between(-100, 6200), Phaser.Math.Between(50, 170), [
+        this.add.ellipse(-24, 4, 50, 27, 0xffffff, 0.16),
+        this.add.ellipse(0, 0, 60, 33, 0xffffff, 0.16),
+        this.add.ellipse(27, 6, 46, 24, 0xffffff, 0.16),
       ]);
       cloud.setScrollFactor(0.15);
-      this.tweens.add({ targets: cloud, x: cloud.x + Phaser.Math.Between(120, 260), duration: Phaser.Math.Between(12000, 20000), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      this.tweens.add({ targets: cloud, x: cloud.x + Phaser.Math.Between(130, 270), duration: Phaser.Math.Between(11000, 18000), yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     }
   }
 
   // ──────────────────────────────────────────────────────────
-  //  平台（石板）
+  //  平台（花岗岩石阶，贯穿五峰）
   // ──────────────────────────────────────────────────────────
 
   createPlatforms() {
@@ -188,139 +190,133 @@ export class SongshanScene extends Phaser.Scene {
     const addPlatform = (x, y, width) => {
       const tileCount = Math.ceil(width / 32);
       for (let i = 0; i < tileCount; i++) {
-        this.platforms.create(x + i * 32 + 16, y, 'tile_stone');
+        this.platforms.create(x + i * 32 + 16, y, 'tile_granite');
       }
     };
 
-    // 地面
-    addPlatform(0, 440, 1600);
-    addPlatform(1800, 440, 2400);
+    // ── 东峰·朝阳峰 (x 0~1200) ──
+    addPlatform(0, 440, 1200);
+    addPlatform(300, 340, 150);
+    addPlatform(600, 270, 120);
+    addPlatform(850, 200, 120);
+    addPlatform(1050, 300, 120);
 
-    // 跳跃平台
-    addPlatform(300, 350, 150);
-    addPlatform(600, 280, 120);
-    addPlatform(900, 220, 100);
-    addPlatform(1150, 310, 180);
-    addPlatform(1400, 250, 120);
-    addPlatform(1900, 350, 150);
-    addPlatform(2100, 290, 180);
+    // ── 南峰·落雁峰 (x 1200~2400，五峰最高，需持续攀升) ──
+    addPlatform(1200, 440, 260);
+    addPlatform(1550, 380, 110);
+    addPlatform(1700, 330, 110);
+    addPlatform(1850, 280, 110);
+    addPlatform(2000, 230, 110);
+    addPlatform(2150, 190, 220);
 
-    // 爬升踏板
-    addPlatform(2380, 360, 64);
-    addPlatform(2460, 328, 64);
-    addPlatform(2540, 296, 64);
-    addPlatform(2620, 264, 64);
-    addPlatform(2700, 232, 64);
-    addPlatform(2750, 200, 140);
-    addPlatform(2920, 238, 140);
+    // ── 西峰·莲花峰 (x 2400~3600，剑圣所在，习白虎裂空) ──
+    addPlatform(2400, 400, 520);
+    addPlatform(2950, 320, 120);
+    addPlatform(3150, 260, 120);
+    addPlatform(3350, 320, 120);
 
-    // 通往内殿的石阶
-    addPlatform(3200, 400, 96);
-    addPlatform(3360, 360, 96);
-    addPlatform(3520, 320, 96);
-    addPlatform(3680, 280, 96);
-    addPlatform(3840, 240, 96);
-    addPlatform(4000, 200, 96);
+    // ── 北峰·云台峰 (x 3600~4800，云雾跳台) ──
+    addPlatform(3600, 400, 200);
+    addPlatform(3850, 340, 110);
+    addPlatform(4050, 280, 110);
+    addPlatform(4250, 220, 110);
+    addPlatform(4450, 280, 110);
+    addPlatform(4650, 340, 110);
 
-    // 内殿主台地（扩展至1000px，撑满整屏作战区域）
-    addPlatform(4060, 165, 1000);
+    // ── 通往中峰·玉女峰的石阶 ──
+    addPlatform(4850, 400, 90);
+    addPlatform(5000, 360, 90);
+    addPlatform(5150, 320, 90);
+    addPlatform(5300, 280, 90);
+    addPlatform(5450, 240, 90);
+    addPlatform(5600, 200, 90);
+
+    // 中峰主台地（x=5700~6200）
+    addPlatform(5700, 165, 500);
   }
 
   // ──────────────────────────────────────────────────────────
-  //  装饰
+  //  装饰（五峰指引牌 + 长空栈道）
   // ──────────────────────────────────────────────────────────
 
   createDecorations() {
-    // 少林寺入口石门
-    const gate = this.add.graphics();
-    gate.fillStyle(0x6a6060, 1);
-    gate.fillRect(2090, 200, 12, 90); gate.fillRect(2158, 200, 12, 90);
-    gate.fillStyle(0x888080, 1);
-    gate.fillRect(2082, 194, 88, 12);
-    gate.fillStyle(0xa08880, 1);
-    gate.fillRect(2084, 196, 84, 6);
-    gate.fillStyle(0xffd700, 0.5);
-    gate.fillRect(2116, 200, 8, 86);
+    const peakSign = (x, y, text, color = '#ffd700') => {
+      const sign = this.add.text(x, y, text, {
+        fontSize: '22px', color, stroke: '#000000', strokeThickness: 4,
+        backgroundColor: '#00000099', padding: { x: 10, y: 5 },
+      }).setOrigin(0.5);
+      this.tweens.add({ targets: sign, alpha: { from: 0.6, to: 1.0 }, duration: 1300, yoyo: true, repeat: -1 });
+      return sign;
+    };
 
-    // 石牌匾
-    this.add.text(2160, 180, '少林寺', {
-      fontSize: '18px', color: '#ffd700', stroke: '#3a2000', strokeThickness: 4,
-      backgroundColor: '#00000066', padding: { x: 8, y: 4 },
-    }).setOrigin(0.5);
+    peakSign(120, 408, '🌄 东峰 · 朝阳峰');
+    peakSign(1230, 408, '🪿 南峰 · 落雁峰（华山最高）');
+    peakSign(2430, 368, '🌸 西峰 · 莲花峰');
+    peakSign(3630, 368, '☁️ 北峰 · 云台峰');
+    peakSign(4880, 368, '👧 中峰 · 玉女峰');
 
-    // 练功场地标记
-    const trainSign = this.add.text(1200, 278, '🥊 练功场', {
-      fontSize: '16px', color: '#c8a870', backgroundColor: '#00000066', padding: { x: 6, y: 3 },
-    }).setOrigin(0.5);
-    this.tweens.add({ targets: trainSign, alpha: { from: 0.6, to: 1.0 }, duration: 1400, yoyo: true, repeat: -1 });
+    // 长空栈道（西峰悬崖木栈道，纯装饰）
+    const plank = this.add.graphics();
+    plank.fillStyle(0x5a4020, 1);
+    for (let x = 2820; x < 2940; x += 18) {
+      plank.fillRect(x, 388, 14, 6);
+    }
+    plank.fillStyle(0x8b6914, 1);
+    plank.fillRect(2818, 384, 126, 3);
 
-    // 通往内殿指引
-    const innerSign = this.add.text(3100, 374, '⬆ 内殿', {
-      fontSize: '20px', color: '#ffd700', stroke: '#000', strokeThickness: 4,
-      backgroundColor: '#00000099', padding: { x: 10, y: 5 },
+    // 华山论剑石碑（西峰）
+    const stele = this.add.graphics();
+    stele.fillStyle(0x6a6468, 1);
+    stele.fillRect(3060, 220, 20, 40);
+    stele.fillStyle(0x8a848a, 1);
+    stele.fillRect(3058, 216, 24, 6);
+    this.add.text(3070, 236, '论\n剑', {
+      fontSize: '10px', color: '#dedede', align: 'center', lineSpacing: 2,
     }).setOrigin(0.5);
-    this.tweens.add({ targets: innerSign, alpha: { from: 0.55, to: 1.0 }, duration: 1200, yoyo: true, repeat: -1 });
 
     // 石灯笼
-    const lanternX = [340, 660, 1200, 2180, 2980];
+    const lanternX = [340, 1650, 2650, 3950, 5050];
     lanternX.forEach((lx) => {
       const rope = this.add.rectangle(lx, 295, 2, 26, 0x4a3020, 1);
-      const lantern = this.add.circle(lx, 315, 8, 0xff9900, 0.88);
-      const glow = this.add.circle(lx, 315, 18, 0xff9900, 0.14);
+      const lantern = this.add.circle(lx, 315, 8, 0xffcc66, 0.88);
+      const glow = this.add.circle(lx, 315, 18, 0xffcc66, 0.14);
       this.tweens.add({ targets: [lantern, glow, rope], y: '+=4', duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
     });
   }
 
   // ──────────────────────────────────────────────────────────
-  //  内殿建筑（Boss 区域）
+  //  中峰台地（Boss 区域）
   // ──────────────────────────────────────────────────────────
 
-  createInnerSanctum() {
-    // 内殿大门
-    const gate = this.add.graphics();
-    gate.fillStyle(0x5a4a30, 1);
-    gate.fillRect(4046, 52, 14, 113); gate.fillRect(4098, 52, 14, 113);
-    gate.fillStyle(0xcc8800, 1);
-    gate.fillRect(4040, 44, 80, 14);
-    gate.fillStyle(0xffd700, 0.6);
-    gate.fillRect(4042, 46, 76, 8);
+  createSummitZone() {
+    // 玉女祠（中峰主殿）
+    const shrine = this.add.graphics();
+    shrine.fillStyle(0x5a4a5a, 1);
+    shrine.fillRect(5940, 108, 14, 57); shrine.fillRect(6020, 108, 14, 57);
+    shrine.fillStyle(0xcc8899, 1);
+    shrine.fillRect(5928, 100, 118, 12);
+    shrine.fillStyle(0x8e2a4a, 1);
+    shrine.fillTriangle(5916, 108, 6060, 108, 5988, 68);
 
-    // 大殿主体
-    const hall = this.add.graphics();
-    hall.fillStyle(0x5a4020, 1);
-    hall.fillRect(4300, 112, 14, 53); hall.fillRect(4380, 112, 14, 53);
-    hall.fillStyle(0xcc8800, 1);
-    hall.fillRect(4288, 104, 106, 12);
-    hall.fillStyle(0x8e2a2a, 1);
-    hall.fillTriangle(4276, 112, 4408, 112, 4342, 72);
-
-    // 香炉
-    const incense = this.add.graphics();
-    incense.fillStyle(0x8b6914, 1);
-    incense.fillEllipse(4240, 158, 28, 12);
-    incense.fillRect(4228, 134, 24, 26);
-    incense.fillStyle(0xdaa520, 1);
-    incense.fillRect(4226, 132, 28, 6);
-
-    // 供杖台（战后生成少林禅杖，位于大殿右侧）
+    // 供晶台（战后生成白虎晶）
     const altar = this.add.graphics();
-    altar.fillStyle(0x5e5860, 1);
-    altar.fillRect(4454, 148, 36, 30);
-    altar.fillStyle(0x8b6914, 1);
-    altar.fillRect(4450, 144, 44, 8);
-    altar.fillStyle(0xffd700, 0.22);
-    altar.fillRect(4452, 146, 40, 4);
+    altar.fillStyle(0x8a8490, 1);
+    altar.fillRect(5794, 148, 36, 30);
+    altar.fillStyle(0xdedede, 1);
+    altar.fillRect(5790, 144, 44, 8);
+    altar.fillStyle(0xffffff, 0.22);
+    altar.fillRect(5792, 146, 40, 4);
 
-    // 香烟粒子
+    // 香烟/云雾粒子
     for (let i = 0; i < 6; i++) {
-      const smoke = this.add.circle(4236 + Phaser.Math.Between(-6, 6), 120 + i * 12, 3, 0xdddddd, 0.4).setDepth(9);
+      const smoke = this.add.circle(5988 + Phaser.Math.Between(-6, 6), 120 + i * 12, 3, 0xffffff, 0.35).setDepth(9);
       this.tweens.add({ targets: smoke, y: smoke.y - 30, alpha: 0, duration: 1200 + i * 200, repeat: -1, delay: i * 200 });
     }
 
-    // 金色粒子光点
+    // 银白粒子光点
     for (let i = 0; i < 18; i++) {
-      const sp = this.add.circle(Phaser.Math.Between(4060, 4680), Phaser.Math.Between(50, 162), Phaser.Math.Between(1, 2), 0xffd700, Phaser.Math.FloatBetween(0.25, 0.65));
-      this.tweens.add({ targets: sp, alpha: { from: 0.1, to: 0.8 }, y: sp.y - Phaser.Math.Between(5, 12), duration: Phaser.Math.Between(800, 2000), yoyo: true, repeat: -1 });
+      const sp = this.add.circle(Phaser.Math.Between(5700, 6180), Phaser.Math.Between(50, 160), Phaser.Math.Between(1, 2), 0xffffff, Phaser.Math.FloatBetween(0.25, 0.6));
+      this.tweens.add({ targets: sp, alpha: { from: 0.1, to: 0.75 }, y: sp.y - Phaser.Math.Between(5, 12), duration: Phaser.Math.Between(800, 2000), yoyo: true, repeat: -1 });
     }
   }
 
@@ -329,15 +325,15 @@ export class SongshanScene extends Phaser.Scene {
   // ──────────────────────────────────────────────────────────
 
   createParticles() {
-    for (let i = 0; i < 30; i++) {
-      const sp = this.add.circle(Phaser.Math.Between(0, 3200), Phaser.Math.Between(60, 440), Phaser.Math.Between(1, 2), 0xffd700, Phaser.Math.FloatBetween(0.2, 0.6));
+    for (let i = 0; i < 32; i++) {
+      const sp = this.add.circle(Phaser.Math.Between(0, 4000), Phaser.Math.Between(60, 440), Phaser.Math.Between(1, 2), 0xffe8cc, Phaser.Math.FloatBetween(0.2, 0.55));
       sp.setScrollFactor(0.35);
-      this.tweens.add({ targets: sp, alpha: { from: 0.15, to: 0.75 }, y: sp.y - Phaser.Math.Between(5, 11), duration: Phaser.Math.Between(1000, 2200), yoyo: true, repeat: -1 });
+      this.tweens.add({ targets: sp, alpha: { from: 0.15, to: 0.7 }, y: sp.y - Phaser.Math.Between(5, 11), duration: Phaser.Math.Between(1000, 2200), yoyo: true, repeat: -1 });
     }
   }
 
   // ──────────────────────────────────────────────────────────
-  //  普通敌人（少林武僧，动态生成池，最多3个同屏）
+  //  普通敌人（华山剑客，动态生成池，最多3个同屏）
   // ──────────────────────────────────────────────────────────
 
   createEnemies() {
@@ -346,61 +342,59 @@ export class SongshanScene extends Phaser.Scene {
     this.maxActiveEnemies = 3;
     this.lastSpawnTime = 0;
 
-    // 18个小怪出生点，随玩家推进动态激活
-    // type: 'melee'=标准近攻  'heavy'=重装近攻(红)  'ranged'=远攻投掷(蓝)
+    // type: 'melee'=近攻  'heavy'=重装(红)  'ranged'=远攻投掷(蓝)
+    // 注：每个出生点的 y 必须比其所在平台中心高出 40px 以上（即落在平台顶面之上留出
+    // 安全下落间隙），否则敌人会直接卡进平台砖块内部，被物理引擎从下方弹出坠落消失。
     this.enemySpawnPool = [
-      // ── 区域1：山脚 (x 300~750) ──
+      // ── 东峰 (x 300~1050) ──
       { x: 380,  y: 400, minX: 330,  maxX: 450,  type: 'melee',  spawned: false },
-      { x: 540,  y: 400, minX: 480,  maxX: 600,  type: 'ranged', spawned: false },
-      { x: 700,  y: 400, minX: 640,  maxX: 760,  type: 'heavy',  spawned: false },
-      // ── 区域2：跳台区 (x 900~1500) ──
-      { x: 920,  y: 180, minX: 900,  maxX: 1000, type: 'melee',  spawned: false },
-      { x: 1180, y: 270, minX: 1150, maxX: 1280, type: 'ranged', spawned: false },
-      { x: 1420, y: 210, minX: 1400, maxX: 1510, type: 'heavy',  spawned: false },
-      // ── 区域3：第二地面段 (x 1800~2300) ──
-      { x: 1870, y: 400, minX: 1820, maxX: 1950, type: 'ranged', spawned: false },
-      { x: 1970, y: 310, minX: 1900, maxX: 2040, type: 'melee',  spawned: false },
-      { x: 2160, y: 250, minX: 2100, maxX: 2280, type: 'heavy',  spawned: false },
-      // ── 区域4：爬升踏台 (x 2300~2850) ──
-      { x: 2360, y: 400, minX: 2300, maxX: 2440, type: 'melee',  spawned: false },
-      { x: 2660, y: 200, minX: 2640, maxX: 2760, type: 'ranged', spawned: false },
-      { x: 2850, y: 200, minX: 2810, maxX: 2940, type: 'heavy',  spawned: false },
-      // ── 区域5：内殿通道前 (x 2950~3200) ──
-      { x: 2980, y: 400, minX: 2940, maxX: 3060, type: 'melee',  spawned: false },
-      { x: 3070, y: 400, minX: 3020, maxX: 3130, type: 'ranged', spawned: false },
-      { x: 3160, y: 400, minX: 3110, maxX: 3200, type: 'heavy',  spawned: false },
-      // ── 区域6：石阶守卫 (x 3200~4060) ──
-      { x: 3290, y: 360, minX: 3200, maxX: 3360, type: 'heavy',  spawned: false },
-      { x: 3590, y: 280, minX: 3520, maxX: 3660, type: 'ranged', spawned: false },
-      { x: 3890, y: 200, minX: 3840, maxX: 3940, type: 'melee',  spawned: false },
+      { x: 640,  y: 230, minX: 600,  maxX: 710,  type: 'ranged', spawned: false },
+      { x: 900,  y: 160, minX: 850,  maxX: 960,  type: 'heavy',  spawned: false },
+      // ── 南峰 (x 1250~2350) ──
+      { x: 1320, y: 400, minX: 1260, maxX: 1440, type: 'ranged', spawned: false },
+      { x: 1600, y: 340, minX: 1560, maxX: 1650, type: 'melee',  spawned: false },
+      { x: 1900, y: 240, minX: 1860, maxX: 1940, type: 'heavy',  spawned: false },
+      { x: 2200, y: 150, minX: 2160, maxX: 2350, type: 'melee',  spawned: false },
+      // ── 西峰 (x 2450~2900，NPC 前方留出安全区) ──
+      { x: 2500, y: 360, minX: 2450, maxX: 2600, type: 'melee',  spawned: false },
+      { x: 3000, y: 280, minX: 2960, maxX: 3060, type: 'ranged', spawned: false },
+      { x: 3380, y: 280, minX: 3360, maxX: 3460, type: 'heavy',  spawned: false },
+      // ── 北峰 (x 3650~4700，云台跳跃) ──
+      { x: 3700, y: 360, minX: 3650, maxX: 3780, type: 'melee',  spawned: false },
+      { x: 3900, y: 300, minX: 3860, maxX: 3950, type: 'ranged', spawned: false },
+      { x: 4100, y: 240, minX: 4060, maxX: 4240, type: 'heavy',  spawned: false },
+      { x: 4480, y: 240, minX: 4460, maxX: 4550, type: 'melee',  spawned: false },
+      { x: 4680, y: 300, minX: 4660, maxX: 4750, type: 'ranged', spawned: false },
+      // ── 中峰石阶守卫 (x 4850~5700) ──
+      { x: 4900, y: 360, minX: 4850, maxX: 4980, type: 'heavy',  spawned: false },
+      { x: 5200, y: 280, minX: 5150, maxX: 5280, type: 'ranged', spawned: false },
+      { x: 5500, y: 200, minX: 5450, maxX: 5560, type: 'melee',  spawned: false },
     ];
   }
 
-  // 根据出生点数据生成一个武僧
   spawnEnemyFromData(data) {
-    const flash = this.add.circle(data.x, data.y, 20, 0xffddaa, 0.55).setDepth(49);
+    const flash = this.add.circle(data.x, data.y, 20, 0xdedede, 0.55).setDepth(49);
     this.tweens.add({ targets: flash, alpha: 0, scale: 2.6, duration: 340, onComplete: () => flash.destroy() });
 
-    const e = this.enemies.create(data.x, data.y, 'monk_enemy');
+    const e = this.enemies.create(data.x, data.y, 'swordsman_enemy');
     e.body.setSize(18, 34); e.body.setOffset(7, 10);
     e.setCollideWorldBounds(true);
     e.patrolMinX = data.minX; e.patrolMaxX = data.maxX;
     e.patrolDirection = 1;
 
     if (data.type === 'heavy') {
-      e.hp = 50; e.patrolSpeed = 72; e.contactDamage = 18; e.isHeavy = true;
-      e.setTint(0xff3300); e.setScale(1.18); e.setVelocityX(72);
+      e.hp = 50; e.patrolSpeed = 74; e.contactDamage = 18; e.isHeavy = true;
+      e.setTint(0xff3300); e.setScale(1.18); e.setVelocityX(74);
     } else if (data.type === 'ranged') {
-      e.hp = 30; e.patrolSpeed = 42; e.contactDamage = 8; e.isRanged = true;
+      e.hp = 30; e.patrolSpeed = 44; e.contactDamage = 8; e.isRanged = true;
       e.lastShootTime = 0; e.shootInterval = 2800;
-      e.setTint(0x0099ff); e.setVelocityX(42);
+      e.setTint(0x33bbff); e.setVelocityX(44);
     } else {
-      e.hp = 40; e.patrolSpeed = 60; e.contactDamage = 10; e.setVelocityX(60);
+      e.hp = 40; e.patrolSpeed = 62; e.contactDamage = 10; e.setVelocityX(62);
     }
     return e;
   }
 
-  // 动态生成逻辑（每帧调用，维持最多3个同屏）
   updateEnemySpawns() {
     if (this.bossDefeated || this.levelFinished) return;
     const now = this.time.now;
@@ -423,36 +417,35 @@ export class SongshanScene extends Phaser.Scene {
   }
 
   // ──────────────────────────────────────────────────────────
-  //  禅杖僧王 BOSS（三阶段）
+  //  白虎剑仙 BOSS（三阶段）
   // ──────────────────────────────────────────────────────────
 
   createBoss() {
-    const boss = this.enemies.create(4560, 100, 'monk_boss');
+    const boss = this.enemies.create(5960, 100, 'huashan_boss');
     boss.body.setSize(22, 38); boss.body.setOffset(5, 8);
     boss.setCollideWorldBounds(true);
-    boss.patrolMinX = 4090; boss.patrolMaxX = 5030;
+    boss.patrolMinX = 5720; boss.patrolMaxX = 6150;
     boss.patrolDirection = -1;
-    boss.maxHp = 600; boss.hp = 600;
+    boss.maxHp = 650; boss.hp = 650;
     boss.isBoss = true;
-    boss.phase = 1; boss.contactDamage = 22;
-    boss.patrolSpeed = 80;
+    boss.phase = 1; boss.contactDamage = 24;
+    boss.patrolSpeed = 85;
     boss.lastChargeTime = 0; boss.lastProjectileTime = 0;
-    boss.lastJumpTime = 0;
-    boss.lastSweepTime = 0;
+    boss.lastJumpTime = 0; boss.lastRoarTime = 0;
     boss.isCharging = false;
     boss.isJumping = false;
     boss.jumpLanding = false;
-    boss.setVelocityX(-80);
+    boss.setVelocityX(-85);
     this.boss = boss;
 
-    this.bossLabel = this.add.text(4560, 46, '🦯 禅杖僧王', {
-      fontSize: '18px', color: '#ff9900', stroke: '#000000', strokeThickness: 4,
+    this.bossLabel = this.add.text(5960, 46, '🐯 白虎剑仙', {
+      fontSize: '18px', color: '#dedede', stroke: '#000000', strokeThickness: 4,
     }).setOrigin(0.5).setDepth(200);
 
     this.createBossHPBar();
 
-    // 竞技场左侧封路墙（内殿入口处）
-    this.bossArenaWall = this.physics.add.staticImage(4050, 260, 'tile_stone');
+    // 竞技场左侧封路墙（中峰台地入口）
+    this.bossArenaWall = this.physics.add.staticImage(5688, 260, 'tile_granite');
     this.bossArenaWall.setVisible(false);
     this.bossArenaWall.body.setSize(20, 600);
     this.bossArenaWall.body.enable = false;
@@ -462,11 +455,11 @@ export class SongshanScene extends Phaser.Scene {
   createBossHPBar() {
     const cx = GAME_WIDTH / 2, barW = 280, barY = 56;
     this.bossHPBG = this.add.rectangle(cx, barY, barW + 6, 22, 0x000000, 0.78)
-      .setScrollFactor(0).setDepth(955).setStrokeStyle(2, 0xff9900, 1).setVisible(false).setAlpha(0);
-    this.bossHPFill = this.add.rectangle(cx - barW / 2, barY, barW, 14, 0xff6600, 1)
+      .setScrollFactor(0).setDepth(955).setStrokeStyle(2, 0xdedede, 1).setVisible(false).setAlpha(0);
+    this.bossHPFill = this.add.rectangle(cx - barW / 2, barY, barW, 14, 0xb0b8c0, 1)
       .setScrollFactor(0).setDepth(956).setOrigin(0, 0.5).setVisible(false).setAlpha(0);
-    this.bossHPName = this.add.text(cx, barY - 15, '🦯 禅杖僧王  第一阶段', {
-      fontSize: '13px', color: '#ff9900', stroke: '#000000', strokeThickness: 3,
+    this.bossHPName = this.add.text(cx, barY - 15, '🐯 白虎剑仙  第一阶段', {
+      fontSize: '13px', color: '#dedede', stroke: '#000000', strokeThickness: 3,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(957).setVisible(false).setAlpha(0);
     this.bossHPPercent = this.add.text(cx + barW / 2 + 6, barY, '100%', {
       fontSize: '11px', color: '#ffffff', stroke: '#000000', strokeThickness: 2,
@@ -489,8 +482,8 @@ export class SongshanScene extends Phaser.Scene {
     const ratio = Math.max(0, this.boss.hp / this.boss.maxHp);
     this.bossHPFill.width = barW * ratio;
     if (this.bossHPPercent) this.bossHPPercent.setText(Math.ceil(ratio * 100) + '%');
-    const cols = { 1: 0xff6600, 2: 0xff3300, 3: 0xcc0000 };
-    this.bossHPFill.setFillStyle(cols[this.boss.phase] || 0xff6600, 1);
+    const cols = { 1: 0xb0b8c0, 2: 0xdd8899, 3: 0xcc0033 };
+    this.bossHPFill.setFillStyle(cols[this.boss.phase] || 0xb0b8c0, 1);
   }
 
   destroyBossHPBar() {
@@ -500,10 +493,10 @@ export class SongshanScene extends Phaser.Scene {
 
   lockBossArena() {
     if (this.bossArenaWall) { this.bossArenaWall.body.enable = true; this.bossArenaWall.refreshBody(); }
-    const flash = this.add.rectangle(4052, 160, 16, 320, 0xff9900, 0.85).setDepth(300);
+    const flash = this.add.rectangle(5690, 160, 16, 320, 0xdedede, 0.85).setDepth(300);
     this.tweens.add({ targets: flash, alpha: 0, scaleY: 1.6, duration: 700, onComplete: () => flash.destroy() });
-    const msg = this.add.text(4200, 96, '⚠️ 禅杖僧王！退路已封！', {
-      fontSize: '16px', color: '#ff9900', stroke: '#000', strokeThickness: 3, backgroundColor: '#00000099', padding: { x: 6, y: 3 },
+    const msg = this.add.text(5840, 96, '⚠️ 白虎剑仙！退路已封！', {
+      fontSize: '16px', color: '#dedede', stroke: '#000', strokeThickness: 3, backgroundColor: '#00000099', padding: { x: 6, y: 3 },
     }).setOrigin(0.5).setDepth(305);
     this.tweens.add({ targets: msg, alpha: 0, y: msg.y - 28, duration: 1400, delay: 200, onComplete: () => msg.destroy() });
   }
@@ -517,7 +510,6 @@ export class SongshanScene extends Phaser.Scene {
 
     const now = this.time.now;
 
-    // 跳跃攻击（全阶段）
     const jumpInterval = boss.phase === 3 ? 2800 : boss.phase === 2 ? 4200 : 6000;
     if (!boss.isCharging && !boss.isJumping && now - boss.lastJumpTime > jumpInterval) {
       boss.lastJumpTime = now;
@@ -528,74 +520,45 @@ export class SongshanScene extends Phaser.Scene {
       const interval = boss.phase === 3 ? 2000 : 3200;
       if (now - boss.lastChargeTime > interval) { boss.lastChargeTime = now; this.bossCharge(boss); }
     }
-    if (boss.phase === 3 && now - boss.lastProjectileTime > 2400) {
-      boss.lastProjectileTime = now; this.bossThrowStaff(boss);
-    }
 
-    // 禅杖横扫（全阶段，近距离时触发的招牌禅杖技能）
-    const sweepInterval = boss.phase === 3 ? 2600 : boss.phase === 2 ? 3400 : 4200;
-    if (!boss.isCharging && !boss.isJumping && now - boss.lastSweepTime > sweepInterval) {
-      const dist = Phaser.Math.Distance.Between(boss.x, boss.y, this.player.x, this.player.y);
-      if (dist < 140) {
-        boss.lastSweepTime = now;
-        this.bossStaffSweep(boss);
-      }
+    // 白虎咆哮（第三阶段，原地AOE冲击波，无需瞄准）
+    if (boss.phase === 3 && !boss.isCharging && !boss.isJumping && now - boss.lastRoarTime > 3400) {
+      boss.lastRoarTime = now;
+      this.bossTigerRoar(boss);
     }
   }
 
   onBossPhaseChange(boss, phase) {
     if (phase === 2) {
-      boss.patrolSpeed = 125; boss.contactDamage = 32; boss.setTint(0xff6600);
-      if (this.bossHPName) this.bossHPName.setText('🦯 禅杖僧王  ⚡ 第二阶段').setStyle({ color: '#ff6600' });
-      if (this.bossHPBG) this.bossHPBG.setStrokeStyle(2, 0xff6600, 1);
-      this.showLevelBanner('⚡ 禅杖僧王·怒气大发！');
-      this.burstParticles(boss.x, boss.y, 18, 0xff6600);
-      this.cameras.main.shake(300, 0.009); this.cameras.main.flash(180, 255, 110, 0, true);
+      boss.patrolSpeed = 128; boss.contactDamage = 33; boss.setTint(0xdd8899);
+      if (this.bossHPName) this.bossHPName.setText('🐯 白虎剑仙  ⚡ 第二阶段').setStyle({ color: '#dd8899' });
+      if (this.bossHPBG) this.bossHPBG.setStrokeStyle(2, 0xdd8899, 1);
+      this.showLevelBanner('⚡ 白虎剑仙·剑气暴涨！');
+      this.burstParticles(boss.x, boss.y, 18, 0xdedede);
+      this.cameras.main.shake(300, 0.009); this.cameras.main.flash(180, 255, 255, 255, true);
     } else if (phase === 3) {
-      boss.patrolSpeed = 165; boss.contactDamage = 45; boss.setTint(0xdd1100);
-      if (this.bossHPName) this.bossHPName.setText('🦯 禅杖僧王  💀 狂怒').setStyle({ color: '#ff4444' });
-      if (this.bossHPBG) this.bossHPBG.setStrokeStyle(2, 0xdd1100, 1);
-      this.showLevelBanner('💀 禅杖僧王·狂怒之力！极度危险！');
-      this.burstParticles(boss.x, boss.y, 28, 0xdd1100);
-      this.cameras.main.shake(500, 0.018); this.cameras.main.flash(280, 255, 0, 0, true);
+      boss.patrolSpeed = 168; boss.contactDamage = 46; boss.setTint(0xcc0033);
+      if (this.bossHPName) this.bossHPName.setText('🐯 白虎剑仙  💀 狂啸').setStyle({ color: '#ff4466' });
+      if (this.bossHPBG) this.bossHPBG.setStrokeStyle(2, 0xcc0033, 1);
+      this.showLevelBanner('💀 白虎剑仙·虎啸山崩！极度危险！');
+      this.burstParticles(boss.x, boss.y, 28, 0xcc0033);
+      this.cameras.main.shake(500, 0.018); this.cameras.main.flash(280, 255, 255, 255, true);
     }
   }
 
-  // 禅杖横扫（近距离宽幅横扫，全阶段，命中造成伤害+击退）
-  bossStaffSweep(boss) {
+  bossCharge(boss) {
     if (!boss || !boss.active || !this.player) return;
+    boss.isCharging = true;
     const dir = this.player.x > boss.x ? 1 : -1;
-    boss.setFlipX(dir < 0);
-    const range = 100;
-    const cx = boss.x + dir * range * 0.55;
-    const cy = boss.y - 8;
-
-    // 禅杖横扫特效（金环挥动弧光）
-    const sweep = this.add.rectangle(cx, cy, range, 28, 0xdaa520, 0.5)
-      .setDepth(53).setStrokeStyle(2, 0xffe066, 0.9).setRotation(dir > 0 ? 0.18 : -0.18);
-    this.tweens.add({ targets: sweep, alpha: 0, scaleX: 1.5, duration: 260, ease: 'Quad.easeOut', onComplete: () => sweep.destroy() });
-    const glow = this.add.circle(boss.x + dir * 16, cy, 10, 0xffe066, 0.55).setDepth(54);
-    this.tweens.add({ targets: glow, alpha: 0, scale: 2.3, duration: 240, onComplete: () => glow.destroy() });
-
-    const warn = this.add.text(boss.x, boss.y - 62, '🦯 禅杖横扫！', {
-      fontSize: '17px', color: '#daa520', stroke: '#000000', strokeThickness: 3, fontStyle: 'bold',
+    const spd = boss.phase === 3 ? 360 : 260;
+    boss.setVelocityX(dir * spd); boss.setFlipX(dir < 0);
+    const warn = this.add.text(boss.x, boss.y - 62, '⚔️ 剑气冲！', {
+      fontSize: '17px', color: '#dedede', stroke: '#000', strokeThickness: 3, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(205);
-    this.tweens.add({ targets: warn, alpha: 0, y: warn.y - 22, duration: 520, onComplete: () => warn.destroy() });
-
-    const dmg = boss.phase === 3 ? 28 : boss.phase === 2 ? 20 : 15;
-    const dist = Phaser.Math.Distance.Between(boss.x, boss.y, this.player.x, this.player.y);
-    if (dist < range) {
-      if (this.player.isGuarding()) {
-        this.player.flashGuardSuccess();
-      } else {
-        this.player.hurt(dmg, boss.x);
-        this.player.setVelocityX(dir * 170);
-        this.showLevelBanner('🦯 禅杖横扫击中！');
-      }
-    }
+    this.tweens.add({ targets: warn, alpha: 0, y: warn.y - 22, duration: 500, onComplete: () => warn.destroy() });
+    this.time.delayedCall(620, () => { if (boss && boss.active) boss.isCharging = false; });
   }
 
-  // BOSS 跳跃攻击（全阶段）
   bossJumpAttack(boss) {
     if (!boss || !boss.active || boss.isJumping || boss.isCharging) return;
     if (!boss.body.blocked.down) return;
@@ -606,19 +569,18 @@ export class SongshanScene extends Phaser.Scene {
     boss.setVelocityY(-480);
     boss.setVelocityX(dir * jumpXSpeed);
     boss.setFlipX(dir < 0);
-    const warn = this.add.text(boss.x, boss.y - 72, '⬆ 跳击！', {
-      fontSize: '18px', color: '#ffaa00', stroke: '#000000', strokeThickness: 3, fontStyle: 'bold',
+    const warn = this.add.text(boss.x, boss.y - 72, '⬆ 飞身斩！', {
+      fontSize: '18px', color: '#ffdd66', stroke: '#000000', strokeThickness: 3, fontStyle: 'bold',
     }).setOrigin(0.5).setDepth(205);
     this.tweens.add({ targets: warn, alpha: 0, y: warn.y - 22, duration: 500, onComplete: () => warn.destroy() });
     this.time.delayedCall(300, () => { if (boss && boss.active) boss.jumpLanding = true; });
   }
 
-  // BOSS 落地冲击
   bossLandingImpact(boss) {
     this.cameras.main.shake(260, 0.011);
-    this.burstParticles(boss.x, boss.y + 14, 18, 0xff9900);
-    const ring = this.add.circle(boss.x, boss.y + 14, 8, 0xff6600, 0)
-      .setStrokeStyle(3, 0xff8800, 0.9).setDepth(52);
+    this.burstParticles(boss.x, boss.y + 14, 18, 0xdedede);
+    const ring = this.add.circle(boss.x, boss.y + 14, 8, 0xb0b8c0, 0)
+      .setStrokeStyle(3, 0xdedede, 0.9).setDepth(52);
     this.tweens.add({ targets: ring, scaleX: 8, scaleY: 4, alpha: 0, duration: 400, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
     const dist = Phaser.Math.Distance.Between(boss.x, boss.y, this.player.x, this.player.y);
     if (dist < 95) {
@@ -626,35 +588,66 @@ export class SongshanScene extends Phaser.Scene {
         this.player.flashGuardSuccess();
       } else {
         this.player.hurt(boss.phase >= 3 ? 26 : 20, boss.x);
-        this.showLevelBanner('💥 禅杖砸地重击！');
+        this.showLevelBanner('💥 飞身斩重击！');
       }
     }
     boss.setVelocityX(0);
   }
 
-  // 敌方弹幕射击（远攻武僧）
+  // 白虎咆哮（第三阶段，原地环形冲击波，全方位判定）
+  bossTigerRoar(boss) {
+    if (!boss || !boss.active || !this.player) return;
+    const radius = 160;
+
+    const warn = this.add.text(boss.x, boss.y - 62, '🐯 虎啸山崩！', {
+      fontSize: '18px', color: '#ff4466', stroke: '#000000', strokeThickness: 3, fontStyle: 'bold',
+    }).setOrigin(0.5).setDepth(205);
+    this.tweens.add({ targets: warn, alpha: 0, y: warn.y - 24, duration: 560, onComplete: () => warn.destroy() });
+
+    const ring = this.add.circle(boss.x, boss.y, 10, 0xcc0033, 0).setStrokeStyle(4, 0xffffff, 0.9).setDepth(53);
+    this.tweens.add({ targets: ring, scale: radius / 10, alpha: 0, duration: 460, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
+    const ring2 = this.add.circle(boss.x, boss.y, 6, 0xcc0033, 0).setStrokeStyle(2, 0xdedede, 0.7).setDepth(53);
+    this.tweens.add({ targets: ring2, scale: radius / 6 * 1.3, alpha: 0, duration: 620, ease: 'Cubic.easeOut', onComplete: () => ring2.destroy() });
+
+    this.cameras.main.shake(300, 0.01);
+
+    this.time.delayedCall(150, () => {
+      if (!boss.active) return;
+      const dist = Phaser.Math.Distance.Between(boss.x, boss.y, this.player.x, this.player.y);
+      if (dist < radius) {
+        if (this.player.isGuarding()) {
+          this.player.flashGuardSuccess();
+        } else {
+          this.player.hurt(24, boss.x);
+          this.showLevelBanner('🐯 虎啸命中！');
+        }
+      }
+    });
+  }
+
   enemyShootProjectile(enemy) {
     if (!enemy || !enemy.active || !this.player) return;
     const dir = this.player.x > enemy.x ? 1 : -1;
     const proj = this.physics.add.image(enemy.x + dir * 18, enemy.y - 10, 'bagua_orb');
-    proj.setTint(0x00aaff);
+    proj.setTint(0x33bbff);
     proj.setScale(0.85);
     proj.damage = 12;
     proj.body.setAllowGravity(false);
     proj.body.setVelocity(dir * 210, 0);
     if (this.enemyProjectiles) this.enemyProjectiles.add(proj);
     this.tweens.add({ targets: proj, angle: dir > 0 ? 360 : -360, duration: 500, repeat: -1 });
+
     const warn = this.add.text(enemy.x, enemy.y - 30, '⚡', {
-      fontSize: '14px', color: '#0099ff',
+      fontSize: '14px', color: '#33bbff',
     }).setOrigin(0.5).setDepth(100);
     this.tweens.add({ targets: warn, alpha: 0, y: warn.y - 14, duration: 380, onComplete: () => warn.destroy() });
+
     this.time.delayedCall(2200, () => { if (proj && proj.active) proj.destroy(); });
   }
 
-  // 敌方弹幕命中玩家
   handleEnemyProjectileHit(player, proj) {
     if (!proj.active) return;
-    this.burstParticles(proj.x, proj.y, 8, 0x00aaff);
+    this.burstParticles(proj.x, proj.y, 8, 0x33bbff);
     proj.destroy();
     if (player.isGuarding()) {
       player.flashGuardSuccess();
@@ -663,54 +656,17 @@ export class SongshanScene extends Phaser.Scene {
     }
   }
 
-  bossCharge(boss) {
-    if (!boss || !boss.active || !this.player) return;
-    boss.isCharging = true;
-    const dir = this.player.x > boss.x ? 1 : -1;
-    const spd = boss.phase === 3 ? 360 : 260;
-    boss.setVelocityX(dir * spd); boss.setFlipX(dir < 0);
-    const warn = this.add.text(boss.x, boss.y - 62, '💢 冲击！', {
-      fontSize: '17px', color: '#ff2200', stroke: '#000', strokeThickness: 3, fontStyle: 'bold',
-    }).setOrigin(0.5).setDepth(205);
-    this.tweens.add({ targets: warn, alpha: 0, y: warn.y - 22, duration: 500, onComplete: () => warn.destroy() });
-    this.time.delayedCall(620, () => { if (boss && boss.active) boss.isCharging = false; });
-  }
-
-  // 禅杖投掷（第三阶段远程技能，甩杖旋转飞击）
-  bossThrowStaff(boss) {
-    if (!boss || !boss.active || !this.player) return;
-    const angle = Phaser.Math.Angle.Between(boss.x, boss.y, this.player.x, this.player.y);
-    const spd = 300;
-    const proj = this.physics.add.image(boss.x, boss.y - 12, 'bagua_orb');
-    proj.setTint(0xcc6600); proj.setScale(0.85);
-    proj.body.setAllowGravity(false);
-    proj.body.setVelocity(Math.cos(angle) * spd, Math.sin(angle) * spd);
-    this.tweens.add({ targets: proj, angle: 360, duration: 450, repeat: -1 });
-
-    const glow = this.add.circle(boss.x, boss.y - 12, 10, 0xcc6600, 0.38).setDepth(48);
-    this.tweens.add({ targets: glow, alpha: { from: 0.2, to: 0.6 }, scale: { from: 0.8, to: 1.4 }, duration: 300, yoyo: true, repeat: -1 });
-
-    this.physics.add.overlap(this.player, proj, () => {
-      if (!proj.active) return;
-      this.burstParticles(proj.x, proj.y, 10, 0xcc6600);
-      glow.destroy(); proj.destroy();
-      if (this.player.isGuarding()) this.player.flashGuardSuccess();
-      else this.player.hurt(28, boss.x);
-    });
-    this.time.delayedCall(3000, () => { if (proj.active) proj.destroy(); if (glow.active) glow.destroy(); });
-  }
-
   respawnBoss() {
     const boss = this.boss;
     if (!boss || !boss.active) return;
-    boss.setPosition(4560, 100); boss.setVelocity(0, 0);
+    boss.setPosition(5960, 100); boss.setVelocity(0, 0);
     boss.isCharging = false;
     boss.isJumping = false;
     boss.jumpLanding = false;
     boss.patrolDirection = -1;
     boss.setVelocityX(-boss.patrolSpeed);
-    if (boss.phase === 3) boss.setTint(0xdd1100);
-    else if (boss.phase === 2) boss.setTint(0xff6600);
+    if (boss.phase === 3) boss.setTint(0xcc0033);
+    else if (boss.phase === 2) boss.setTint(0xdd8899);
     else boss.clearTint();
   }
 
@@ -719,9 +675,9 @@ export class SongshanScene extends Phaser.Scene {
   // ──────────────────────────────────────────────────────────
 
   onBossDefeated(boss) {
-    this.burstParticles(boss.x, boss.y, 30, 0xffd700);
-    this.burstParticles(boss.x, boss.y, 18, 0xff6600);
-    this.burstParticles(boss.x, boss.y, 10, 0xdd1100);
+    this.burstParticles(boss.x, boss.y, 30, 0xffffff);
+    this.burstParticles(boss.x, boss.y, 18, 0xdedede);
+    this.burstParticles(boss.x, boss.y, 10, 0xcc0033);
     this.cameras.main.shake(400, 0.012);
     boss.destroy();
     this.bossDefeated = true;
@@ -729,45 +685,42 @@ export class SongshanScene extends Phaser.Scene {
     if (this.bossLabel) { this.bossLabel.destroy(); this.bossLabel = null; }
     this.destroyBossHPBar();
     if (this.bossArenaWall) this.bossArenaWall.body.enable = false;
-    skillSystem.collect(ITEMS.SONGSHAN_COMPLETE);
-    this.showLevelBanner('🦯 禅杖僧王已败！');
-    this.time.delayedCall(1200, () => this.spawnStaffPickup());
+    skillSystem.collect(ITEMS.HUASHAN_COMPLETE);
+    this.showLevelBanner('🐯 白虎剑仙已败！');
+    this.time.delayedCall(1200, () => this.spawnCrystalPickup());
   }
 
-  // 供杖台生成少林禅杖（战后拾取物，位于大殿供杖台上方）
-  spawnStaffPickup() {
-    this.awaitingStaffPickup = true;
-    const sx = 4472, sy = 108;
-    const staff = this.physics.add.staticImage(sx, sy, 'chan_staff');
-    staff.setDepth(10);
-    this.tweens.add({ targets: staff, y: sy - 12, duration: 750, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+  // 供晶台生成白虎晶（战后拾取物，位于玉女祠供晶台上方）
+  spawnCrystalPickup() {
+    this.awaitingCrystalPickup = true;
+    const sx = 5812, sy = 108;
+    const crystal = this.physics.add.staticImage(sx, sy, 'crystal_baihu');
+    crystal.setDepth(10);
+    this.tweens.add({ targets: crystal, y: sy - 12, angle: 360, duration: 1600, repeat: -1, ease: 'Sine.easeInOut' });
 
-    const glow = this.add.circle(sx, sy, 24, 0xdaa520, 0.2).setDepth(9);
+    const glow = this.add.circle(sx, sy, 24, 0xdedede, 0.2).setDepth(9);
     this.tweens.add({ targets: glow, alpha: { from: 0.08, to: 0.45 }, scale: { from: 0.9, to: 1.3 }, duration: 750, yoyo: true, repeat: -1 });
 
-    const hint = this.add.text(sx, sy - 40, '🦯 少林禅杖', { fontSize: '18px', color: '#daa520', stroke: '#000000', strokeThickness: 3, backgroundColor: '#00000088', padding: { x: 6, y: 3 } }).setOrigin(0.5).setDepth(11);
+    const hint = this.add.text(sx, sy - 40, '🐯 白虎晶', { fontSize: '18px', color: '#dedede', stroke: '#000000', strokeThickness: 3, backgroundColor: '#00000088', padding: { x: 6, y: 3 } }).setOrigin(0.5).setDepth(11);
     this.tweens.add({ targets: hint, y: '+=5', duration: 900, yoyo: true, repeat: -1 });
 
-    this.physics.add.overlap(this.player, staff, () => {
-      if (!staff.active) return;
-      staff.destroy(); glow.destroy(); hint.destroy();
-      this.awaitingStaffPickup = false;
-      if (skillSystem.collect(ITEMS.CHAN_STAFF)) {
-        this.showLevelBanner('🦯 少林禅杖已获得！新技能：禅杖旋风扫！');
-        this.time.delayedCall(700, () => this.showVictoryDialogue());
-      } else {
-        this.showVictoryDialogue();
+    this.physics.add.overlap(this.player, crystal, () => {
+      if (!crystal.active) return;
+      crystal.destroy(); glow.destroy(); hint.destroy();
+      this.awaitingCrystalPickup = false;
+      if (skillSystem.collect(ITEMS.CRYSTAL_BAIHU)) {
+        this.showLevelBanner('🐯 白虎晶已获得！气运更盛！');
       }
+      this.time.delayedCall(700, () => this.showVictoryDialogue());
     });
   }
 
   showVictoryDialogue() {
     const lines = [
-      '旁白：「禅杖僧王一败涂地，少林禅武之力流转于身…」',
-      '旁白：「少林禅杖到手，长杖挥洒，可发禅杖旋风扫敌！」',
-      '旁白：「嵩山气运碎片现身，五岳之路越来越近！」',
-      '地图：「传送门已开启，前往下一座圣山吧！」',
-      '✅ 嵩山完成！前往传送门继续旅程。',
+      '旁白：「白虎剑仙一败涂地，西岳气运碎片终于集齐！」',
+      '旁白：「五岳之中，已收东岳、南岳、中岳、西岳气运……」',
+      '地图：「唯余北岳恒山，五岳归一，蛟龙之秘可解！」',
+      '✅ 华山完成！前往传送门继续旅程。',
     ];
     this.player.isTalking = true;
     this.mapDialogue.start(lines, () => {
@@ -778,14 +731,14 @@ export class SongshanScene extends Phaser.Scene {
 
   // ──────────────────────────────────────────────────────────
   //  能量球
-
   // ──────────────────────────────────────────────────────────
 
   createEnergyOrbs() {
     this.energyOrbs = this.physics.add.group({ allowGravity: false, immovable: true });
     const positions = [
-      [630, 220], [900, 170], [1500, 200], [1960, 310],
-      [2380, 325], [2920, 400], [3420, 325], [3730, 248],
+      [640, 220], [900, 150], [1650, 330], [2000, 180],
+      [2600, 350], [3150, 210], [3850, 290], [4250, 170], [4650, 290],
+      [5150, 270], [5450, 190],
     ];
     positions.forEach(([x, y]) => {
       const orb = this.energyOrbs.create(x, y, 'crystal_yellow');
@@ -801,26 +754,27 @@ export class SongshanScene extends Phaser.Scene {
 
   createNpcAndPortal() {
     const dialogues = [
-      '方丈：「阿弥陀佛，小北施主，少林有缘人，老衲等候已久。」',
-      '方丈：「汝持太极八卦剑，气运可期，尚需少林内劲相助。」',
-      '方丈：「少林秘传易筋经——运功时（V键），爆劲前冲可震退敌群！」',
-      '方丈：「汝的黄龙晶（C键）亦可震地伤敌，龙威赫赫！」',
-      '方丈：「然则寺中禅杖僧王据守内殿，其禅杖攻守兼备，非真功不能胜。」',
-      '方丈：「记住：禅定者制心，武者制身，二者合一则无敌！」',
-      '✅ 习得易筋经！前进，迎战禅杖僧王！',
+      '剑圣：「小北，西峰莲花之上，老朽已候多时。」',
+      '剑圣：「你携太极剑与少林禅杖，气运已成，然独缺西岳白虎之力。」',
+      '剑圣：「白虎晶蛰伏于你体内已久——运功时（N键），可发白虎裂空，扑袭强敌！」',
+      '剑圣：「中峰玉女祠中，白虎剑仙镇守气运碎片，剑法通神，不可小觑。」',
+      '剑圣：「记住：华山之险，在峰不在剑；心定则剑随，气盛则势成！」',
+      '✅ 白虎裂空已习得！前进，直上中峰！',
     ];
 
-    this.npc = new NPC(this, 2900, 240, 'npc_abbot', dialogues, () => {
-      if (skillSystem.collect(ITEMS.SKILL_YIJINJING)) {
-        this.showLevelBanner('💪 易筋经已习得！→ 前往内殿');
+    this.npc = new NPC(this, 2650, 360, 'npc_swordsage', dialogues, () => {
+      if (skillSystem.collect(ITEMS.CRYSTAL_BAIHU)) {
+        this.showLevelBanner('🐯 白虎裂空已解锁！→ 直上中峰');
       }
-      // 与方丈对话完毕，设置新重生点
-      this.respawnPoint = { x: 2820, y: 390 };
-      this.showCheckpointBeacon(2820, 390);
-    }, '方丈');
+      // 与剑圣对话完毕，设置新重生点
+      // 西峰地面平台中心 y=400（顶面 y=384），比东/南峰地面（y=440）高出40px，
+      // 重生点须相应抬高，否则玩家会摔入地面砖块内部被弹出坠落。
+      this.respawnPoint = { x: 2560, y: 350 };
+      this.showCheckpointBeacon(2560, 350);
+    }, '剑圣');
 
-    this.portalGlow = this.add.ellipse(5080, 106, 40, 76, COLORS.TEAL, 0.18).setVisible(false);
-    this.portal = this.physics.add.staticImage(5080, 106, 'portal_frame');
+    this.portalGlow = this.add.ellipse(6120, 106, 40, 76, COLORS.TEAL, 0.18).setVisible(false);
+    this.portal = this.physics.add.staticImage(6120, 106, 'portal_frame');
     this.portal.setAlpha(0.35);
 
     this.physics.add.overlap(this.player, this.portal, () => {
@@ -834,11 +788,11 @@ export class SongshanScene extends Phaser.Scene {
 
   createQuizItems() {
     this.quizItems = this.physics.add.staticGroup();
-    const positions = [[450, 408], [980, 408], [1600, 408], [2060, 260], [2720, 408]];
+    const positions = [[450, 408], [1000, 408], [1750, 408], [2900, 380], [4400, 250]];
 
     positions.forEach(([x, y], i) => {
       const scroll = this.quizItems.create(x, y, 'quiz_scroll');
-      scroll.quizIndex = i % SONGSHAN_QUIZZES.length;
+      scroll.quizIndex = i % HUASHAN_QUIZZES.length;
       scroll.setTint(0xffd700);
       this.tweens.add({ targets: scroll, y: y - 10, duration: 1200, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
@@ -854,7 +808,7 @@ export class SongshanScene extends Phaser.Scene {
       if (this.quizUI.isOpen || scroll._used) return;
       scroll._hint.setVisible(false); scroll._used = true; scroll.destroy();
       player.isTalking = true;
-      const qData = SONGSHAN_QUIZZES[scroll.quizIndex];
+      const qData = HUASHAN_QUIZZES[scroll.quizIndex];
       this.quizUI.open(qData.q, qData.choices, qData.correct, (correct) => {
         player.isTalking = false;
         if (correct) { this.player.addWisdomBuff(20); this.showLevelBanner('📖 智慧+20 → 攻击提升！'); this.burstParticles(this.player.x, this.player.y - 24, 12, 0xffd700); }
@@ -865,7 +819,7 @@ export class SongshanScene extends Phaser.Scene {
 
   showControlsReminder() {
     const reminder = this.add.text(GAME_WIDTH / 2, 76,
-      '← → 移动  |  ↑/空格 跳跃  |  J 剑击  |  Z 朱雀  |  C 黄龙  |  V 易筋经  |  X 护体  |  F 交谈',
+      '← → 移动  |  ↑/空格 跳跃  |  J 攻击  |  Q 切换武器  |  Z朱雀 C黄龙 N白虎 X护体  |  F 交谈',
       { fontSize: '15px', color: '#ffffff', backgroundColor: '#00000099', padding: { x: 10, y: 5 } })
       .setOrigin(0.5).setScrollFactor(0).setDepth(900);
     this.tweens.add({ targets: reminder, alpha: 0, delay: 3500, duration: 1000, onComplete: () => reminder.destroy() });
@@ -904,14 +858,14 @@ export class SongshanScene extends Phaser.Scene {
       this.burstParticles(enemy.x, enemy.y, 8, 0x4de8ff);
       return;
     }
-    const damage = enemy.contactDamage || (enemy.isBoss ? 22 : 10);
+    const damage = enemy.contactDamage || (enemy.isBoss ? 24 : 10);
     player.hurt(damage, enemy.x);
   }
 
   handleBulletHit(bullet, enemy) {
     if (!bullet.active || !enemy.active) return;
-    // 禁止从内殿外/山下远程狙击BOSS：必须实时站在竞技场内，攻击才生效
-    if (enemy.isBoss && this.player.x < 4080) return;
+    // 禁止从中峰台地外/山下远程狙击BOSS：必须实时站在竞技场内，攻击才生效
+    if (enemy.isBoss && this.player.x < 5700) return;
     this.burstParticles(bullet.x, bullet.y, 8, 0x4488ff);
     bullet.destroy();
     this.damageEnemy(enemy, bullet.damage || 8);
@@ -930,21 +884,21 @@ export class SongshanScene extends Phaser.Scene {
     this.burstParticles(this.player.x, this.player.y - 20, 6, 0xffd700);
     const hpGain = data.hp || 20;
     this.player.heal(hpGain);
-    this.showLevelBanner(`🍱 ${data.label} → 恢复${hpGain}气血`);
+    this.showLevelBanner(`🍑 ${data.label} → 恢复${hpGain}气血`);
   }
 
   damageEnemy(enemy, damage = 10) {
     if (!enemy || !enemy.active) return;
-    // 统一安全阀：无论拳脚/剑气/杖法/技能AOE，玩家必须实时站在竞技场内才能伤到BOSS，
+    // 统一安全阀：无论拳脚/剑气/白虎裂空/技能AOE，玩家必须实时站在竞技场内才能伤到BOSS，
     // 防止在场外/山下对BOSS挂机输出（BOSS无法主动下山追击，必须公平对等）。
-    if (enemy.isBoss && this.player.x < 4080) return;
-    enemy.hp = typeof enemy.hp === 'number' ? enemy.hp : (enemy.isBoss ? 600 : 40);
-    // BOSS 单次最大受伤 25，确保需要 24+ 下才能击败
+    if (enemy.isBoss && this.player.x < 5700) return;
+    enemy.hp = typeof enemy.hp === 'number' ? enemy.hp : (enemy.isBoss ? 650 : 40);
+    // BOSS 单次最大受伤 25，确保需要较多次攻击才能击败
     if (enemy.isBoss) damage = Math.min(damage, 25);
     enemy.hp -= damage;
     if (enemy.hp > 0) {
       sfx.play('enemy_hit');
-      this.burstParticles(enemy.x, enemy.y, 6, enemy.isBoss ? 0xff6600 : 0xffd27a);
+      this.burstParticles(enemy.x, enemy.y, 6, enemy.isBoss ? 0xdedede : 0xffd27a);
       if (enemy.isBoss) this.updateBossHPBar();
       return;
     }
@@ -954,12 +908,12 @@ export class SongshanScene extends Phaser.Scene {
   defeatEnemy(enemy) {
     if (!enemy || !enemy.active) return;
     if (enemy.isBoss) { this.onBossDefeated(enemy); return; }
-    this.burstParticles(enemy.x, enemy.y, 10, 0xffddaa);
+    this.burstParticles(enemy.x, enemy.y, 10, 0xdedede);
     if (Math.random() < 0.3) {
       const foods = [
-        { key: 'food_mantou', hp: 18, label: '素包子' },
-        { key: 'food_tofu', hp: 22, label: '嵩山豆腐' },
+        { key: 'food_shizi', hp: 22, label: '火晶柿子' },
         { key: 'food_ganmian', hp: 20, label: '热干面' },
+        { key: 'food_lotus', hp: 30, label: '莲藕排骨汤' },
       ];
       const food = foods[Math.floor(Math.random() * foods.length)];
       const drop = this.foodDrops.create(enemy.x, enemy.y - 16, food.key);
@@ -1014,6 +968,30 @@ export class SongshanScene extends Phaser.Scene {
     });
   }
 
+  // 白虎裂空特效 + 伤害（N键，扑击式直线突进）
+  baihuStrike(x, y, dir, range, height, damage) {
+    const cx = x + dir * range * 0.5;
+    const claw = this.add.rectangle(cx, y - 6, range, height, 0xdedede, 0.3).setDepth(52).setStrokeStyle(3, 0xffffff, 0.85);
+    this.tweens.add({ targets: claw, alpha: 0, scaleX: 1.4, scaleY: 1.5, duration: 340, ease: 'Cubic.easeOut', onComplete: () => claw.destroy() });
+    // 三道虎爪痕
+    for (let i = 0; i < 3; i++) {
+      const offsetY = (i - 1) * 14;
+      const slash = this.add.rectangle(cx, y - 6 + offsetY, range * 0.9, 6, 0xffffff, 0.8)
+        .setDepth(53).setRotation(dir > 0 ? 0.12 : -0.12);
+      this.tweens.add({ targets: slash, alpha: 0, scaleX: 1.3, duration: 260, onComplete: () => slash.destroy() });
+    }
+    for (let i = 0; i < 10; i++) {
+      const bit = this.add.circle(x + dir * Phaser.Math.Between(10, range), y + Phaser.Math.Between(-height * 0.4, height * 0.4), Phaser.Math.Between(3, 7), 0xdedede, 0.85).setDepth(53);
+      this.tweens.add({ targets: bit, alpha: 0, x: bit.x + dir * Phaser.Math.Between(20, 60), duration: Phaser.Math.Between(200, 400), onComplete: () => bit.destroy() });
+    }
+    this.enemies.getChildren().forEach((enemy) => {
+      if (!enemy.active) return;
+      const inZone = dir > 0 ? enemy.x >= x && enemy.x <= x + range && Math.abs(enemy.y - y) < height * 0.6
+                              : enemy.x <= x && enemy.x >= x - range && Math.abs(enemy.y - y) < height * 0.6;
+      if (inZone) { this.damageEnemy(enemy, damage); enemy.setVelocityX(dir * 200); }
+    });
+  }
+
   burstParticles(x, y, count, tint) {
     for (let i = 0; i < count; i++) {
       const bit = this.add.image(x, y, 'particle').setTint(tint).setAlpha(0.9);
@@ -1023,19 +1001,14 @@ export class SongshanScene extends Phaser.Scene {
     }
   }
 
-  // 在重生点位置显示光标信标
   showCheckpointBeacon(x, y) {
-    // 通知横幅（延迟避免与习得技能横幅重叠）
     this.time.delayedCall(400, () => {
       this.showLevelBanner('⛳ 新重生点已设置！死亡后在此处复活');
     });
-    // 金色光柱
     const beam = this.add.rectangle(x, y - 60, 10, 120, 0xffd700, 0.55).setDepth(48);
     this.tweens.add({ targets: beam, alpha: 0, scaleY: 0.2, y: y - 100, duration: 1800, ease: 'Sine.easeIn', onComplete: () => beam.destroy() });
-    // 扩散光环
     const ring = this.add.circle(x, y, 8, 0xffd700, 0).setStrokeStyle(3, 0xffe066, 0.9).setDepth(48);
     this.tweens.add({ targets: ring, scaleX: 6, scaleY: 6, alpha: 0, duration: 1200, ease: 'Quad.easeOut', onComplete: () => ring.destroy() });
-    // 常驻小标记（绿色圆点+旗帜图标提示此处可复活）
     const dot = this.add.circle(x, y - 2, 5, 0x66ff88, 0.9).setDepth(48);
     const dotLabel = this.add.text(x, y - 18, '⛳', { fontSize: '14px' }).setOrigin(0.5).setDepth(49);
     this.tweens.add({ targets: [dot, dotLabel], alpha: { from: 1, to: 0.3 }, duration: 900, yoyo: true, repeat: -1 });
@@ -1052,18 +1025,18 @@ export class SongshanScene extends Phaser.Scene {
     this.player.setVelocity(0, 0);
     bus.emit(EVENTS.PLAYER_HURT, { hp: this.player.hp, maxHp: this.player.maxHp, wisdom: this.player.wisdomBonus, attack: this.player.getCurrentAttack() });
     const msg = this.respawnPoint.x > 100
-      ? '💫 气运恢复，在方丈处重生！'
-      : '💨 气运受损，回到山门！';
+      ? '💫 气运恢复，在剑圣处重生！'
+      : '💨 气运受损，回到东峰！';
     this.showLevelBanner(msg);
   }
 
   finishLevel() {
     if (this.levelFinished) return;
     this.levelFinished = true;
-    bus.emit(EVENTS.LEVEL_COMPLETE, { next: '华山' });
+    bus.emit(EVENTS.LEVEL_COMPLETE, { next: '恒山' });
 
     const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.45).setScrollFactor(0).setDepth(980);
-    const text = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '🗺️ 嵩山通关！西岳华山，五峰险途在前！', {
+    const text = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '🗺️ 华山通关！北岳恒山，敬请期待！', {
       fontSize: '30px', color: '#fff1a6', fontStyle: 'bold', stroke: '#000000', strokeThickness: 6,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(981);
 
@@ -1072,7 +1045,7 @@ export class SongshanScene extends Phaser.Scene {
     this.time.delayedCall(1800, () => {
       music.stop();
       this.scene.stop(SCENES.HUD);
-      this.scene.start(SCENES.HUASHAN);
+      this.scene.start(SCENES.MENU);
       overlay.destroy(); text.destroy();
     });
   }
@@ -1085,7 +1058,6 @@ export class SongshanScene extends Phaser.Scene {
     this.player.update();
     const nearNpc = this.npc.update(this.player);
 
-    // 动态生成小怪（最多3个同屏）
     this.updateEnemySpawns();
 
     this.enemies.getChildren().forEach((enemy) => {
@@ -1105,13 +1077,11 @@ export class SongshanScene extends Phaser.Scene {
 
       if (enemy.isBoss && (enemy.isCharging || enemy.isJumping)) return;
 
-      // BOSS 主动追击玩家
       if (enemy.isBoss && !enemy.isCharging && !enemy.isJumping) {
         const dx = this.player.x - enemy.x;
         if (Math.abs(dx) > 20) enemy.patrolDirection = dx > 0 ? 1 : -1;
       }
 
-      // 远攻武僧 AI
       if (enemy.isRanged) {
         const dist = Phaser.Math.Distance.Between(enemy.x, enemy.y, this.player.x, this.player.y);
         const now = this.time.now;
@@ -1134,7 +1104,6 @@ export class SongshanScene extends Phaser.Scene {
       enemy.setFlipX(enemy.patrolDirection < 0);
     });
 
-    // BOSS 跳跃落地检测
     if (this.boss && this.boss.active && this.boss.isJumping) {
       if (this.boss.jumpLanding && this.boss.body.blocked.down) {
         this.boss.isJumping = false;
@@ -1147,9 +1116,9 @@ export class SongshanScene extends Phaser.Scene {
       this.bossLabel.setPosition(this.boss.x, this.boss.y - 52);
     }
 
-    if (this.boss && this.boss.active && !this.bossEncounterShown && this.player.x >= 4080) {
+    if (this.boss && this.boss.active && !this.bossEncounterShown && this.player.x >= 5700) {
       this.bossEncounterShown = true;
-      this.showLevelBanner('🦯 禅杖僧王登场！集中精力！');
+      this.showLevelBanner('🐯 白虎剑仙登场！集中精力！');
       this.showBossHPBar();
       this.lockBossArena();
     }
@@ -1173,12 +1142,12 @@ export class SongshanScene extends Phaser.Scene {
 
     if (!this.levelFinished) {
       const enemyNearby = this.enemies.getChildren().some((e) => e.active && Math.abs(e.x - this.player.x) < 280);
-      const wantTheme = enemyNearby ? 'battle' : 'songshan';
+      const wantTheme = enemyNearby ? 'battle' : 'huashan';
       if (wantTheme !== this._musicTheme) { this._musicTheme = wantTheme; music.play(wantTheme); }
     }
 
     if (this.hud && this.hud.scene.isActive()) {
-      this.hud.setLocation('🏯 嵩山·少林寺');
+      this.hud.setLocation('⛰️ 华山');
       this.hud.setHealth(this.player.hp, this.player.maxHp);
       this.hud.setWisdom(this.player.wisdomBonus, this.player.getCurrentAttack());
 
@@ -1187,26 +1156,26 @@ export class SongshanScene extends Phaser.Scene {
       } else if (this.player.isTalking) {
         this.hud.setHint('F：继续对话');
       } else if (nearNpc && !this.npc.complete) {
-        this.hud.setHint('靠近方丈，按 F 交谈');
+        this.hud.setHint('靠近剑圣，按 F 交谈');
       } else if (this.boss && this.boss.active && Math.abs(this.player.x - this.boss.x) < 450) {
         const ph = this.boss.phase;
-        const hint = ph === 3 ? '💀 狂怒！躲禅杖横扫·X护体·C黄龙·J剑击'
-                   : ph === 2 ? '⚡ 第二阶段！警惕冲锋与横扫·X护体·J剑击'
-                   : '🦯 禅杖僧王！J 剑击 · C 黄龙震地 · X 护体';
+        const hint = ph === 3 ? '💀 狂啸！躲虎啸·X护体·N白虎·J攻击'
+                   : ph === 2 ? '⚡ 第二阶段！警惕冲锋·X护体·J攻击'
+                   : '🐯 白虎剑仙！J 攻击 · N 白虎裂空 · X 护体';
         this.hud.setHint(hint);
       } else if (this.portalActive && Math.abs(this.player.x - this.portal.x) < 100) {
         this.hud.setHint('走进传送门，继续旅程！');
-      } else if (this.awaitingStaffPickup) {
-        this.hud.setHint('🦯 前往供杖台，拾取少林禅杖！');
+      } else if (this.awaitingCrystalPickup) {
+        this.hud.setHint('🐯 前往供晶台，拾取白虎晶！');
       } else if (this.npc.complete && !this.bossDefeated) {
-        this.hud.setHint('→ 登上石阶，前往少林内殿');
+        this.hud.setHint('→ 翻越云台，直上中峰');
       } else if (this.quizItems && this.quizItems.getChildren().some((s) => !s._used && Phaser.Math.Distance.Between(this.player.x, this.player.y, s.x, s.y) < 60)) {
         this.hud.setHint('📜 触碰答题卷获得智慧');
-      } else if (this.player.skills[ITEMS.SKILL_YIJINJING]) {
+      } else if (this.player.skills[ITEMS.CRYSTAL_BAIHU]) {
         const wLabel = this.player.activeWeapon === 'sword' ? '⚔️太极剑' : this.player.activeWeapon === 'staff' ? '🦯少林禅杖' : '☯八卦掌';
-        this.hud.setHint(`${wLabel} · Q切换 | J剑/杖/拳 | C黄龙 | V易筋经 | X护体`);
+        this.hud.setHint(`${wLabel} · Q切换 | J攻击 | N白虎裂空 | X护体`);
       } else {
-        this.hud.setHint('J 攻击武僧  |  继续前进');
+        this.hud.setHint('J 攻击剑客  |  继续前进');
       }
     }
   }

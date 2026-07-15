@@ -4,12 +4,13 @@ import { DialogueBox } from '../ui/DialogueBox.js';
 import { bus, EVENTS } from '../events.js';
 
 export class NPC extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene, x, y, texture, dialogues, onComplete) {
+  constructor(scene, x, y, texture, dialogues, onComplete, name = '武当真人') {
     super(scene, x, y, texture);
 
     this.scene = scene;
     this.dialogues = dialogues;
     this.onComplete = onComplete;
+    this.npcName = name;
     this.interactionRadius = 60;
     this.complete = false;
 
@@ -20,7 +21,7 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
     this.body.setImmovable(true);
 
     this.nameLabel = scene.add
-      .text(x, y - 54, '武当真人', {
+      .text(x, y - 54, this.npcName, {
         fontSize: '16px',
         color: '#fff4c4',
         stroke: '#000000',
@@ -90,12 +91,12 @@ export class NPC extends Phaser.Physics.Arcade.Sprite {
 
     player.isTalking = true;
     player.setVelocityX(0);
-    bus.emit(EVENTS.DIALOGUE_START, { npc: '武当真人' });
+    bus.emit(EVENTS.DIALOGUE_START, { npc: this.npcName });
 
     this.dialogueBox.start(this.dialogues, () => {
       player.isTalking = false;
       this.setCompleted(true);
-      bus.emit(EVENTS.DIALOGUE_END, { npc: '武当真人' });
+      bus.emit(EVENTS.DIALOGUE_END, { npc: this.npcName });
 
       if (this.onComplete) {
         this.onComplete();

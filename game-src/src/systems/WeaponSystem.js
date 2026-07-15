@@ -83,6 +83,15 @@ const DEFS = {
     rangeMax: 110,
   },
 
+  // ─────────────── 少林禅杖挥击（嵩山BOSS战后获得，强化J键攻击）──────────
+  CHAN_STAFF: {
+    baseDamage: 22,         // 伤害略低于太极剑，但范围更广
+    baseRange: 68,          // 禅杖较长，攻击范围优于剑与拳
+    baseHeight: 60,
+    rangePerWisdom: 0.6,
+    rangeMax: 130,
+  },
+
   // ─────────────── 黄龙震地（C键，嵩山黄龙晶技能）──────────────
   HUANGLONG_STRIKE: {
     baseDamage: 45,
@@ -93,6 +102,18 @@ const DEFS = {
     rangeMax: 280,
     cooldownMsPerWisdom: 0,
     cooldownMsMin: 5000,
+  },
+
+  // ─────────────── 白虎裂空（N键，华山白虎晶技能）──────────────
+  BAIHU_STRIKE: {
+    baseDamage: 35,
+    baseRange: 130,         // 扑击冲距
+    baseHeight: 50,
+    baseCooldownMs: 4500,
+    rangePerWisdom: 1.0,
+    rangeMax: 220,
+    cooldownMsPerWisdom: 0,
+    cooldownMsMin: 4500,
   },
 };
 

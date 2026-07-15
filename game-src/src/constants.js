@@ -29,6 +29,7 @@ export const SCENES = {
   HUD: 'HUDScene',
   WUDANG: 'WudangScene',
   SONGSHAN: 'SongshanScene',
+  HUASHAN: 'HuashanScene',
 };
 export const ITEMS = {
   CRYSTAL_ZHUQUE: 'crystal_zhuque',
@@ -42,5 +43,7 @@ export const ITEMS = {
   SKILL_TAIJI: 'skill_taiji',
   SKILL_YIJINJING: 'skill_yijinjing',
   TAIJI_SWORD: 'taiji_sword',
+  CHAN_STAFF: 'chan_staff',       // 少林禅杖（嵩山BOSS战后供杖台获得）
   SONGSHAN_COMPLETE: 'songshan_complete',  // 嵩山过关标志
+  HUASHAN_COMPLETE: 'huashan_complete',    // 华山过关标志
 };

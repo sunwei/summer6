@@ -265,6 +265,18 @@ export class BootScene extends Phaser.Scene {
     rect(0xdaa520, 7, 26, 6, 2);    // 剑鐔
     g.generateTexture('taiji_sword', 20, 28);
 
+    // 少林禅杖 — 嵩山供杖台拾取物（木质杖身 + 双层金环 + 杖首宝珠，20×32）
+    g.clear();
+    rect(0x5a3010, 8, 2, 4, 26);    // 木质杖身
+    rect(0x7a5020, 9, 3, 2, 24);    // 杖身高光
+    rect(0xffd700, 5, 7, 10, 3);    // 上金环
+    rect(0xffd700, 5, 15, 10, 3);   // 下金环
+    rect(0xfff2a8, 6, 8, 8, 1);     // 上环高光
+    rect(0xdaa520, 5, 0, 10, 4);    // 杖首底座
+    rect(0xfff2a8, 8, 0, 4, 3);     // 杖首宝珠高光
+    rect(0xdaa520, 6, 28, 8, 3);    // 杖底石墩
+    g.generateTexture('chan_staff', 20, 32);
+
     // 嵩山石板平台（灰色石质）
     g.clear();
     rect(0x888080, 0, 0, 32, 6);   // 石板面
@@ -293,7 +305,7 @@ export class BootScene extends Phaser.Scene {
     rect(0x2c1a00, 18, 42, 10, 4);  // 右草鞋
     g.generateTexture('monk_enemy', 32, 48);
 
-    // 铁头僧王（BOSS，橙色袍，铁头带，32×48）
+    // 禅杖僧王（BOSS，橙色袍，手持双环禅杖，32×48）
     g.clear();
     rect(0xd4a574, 8, 4, 16, 12);   // 面部
     rect(0x4a3010, 6, 0, 20, 6);    // 头顶（光头）
@@ -311,8 +323,12 @@ export class BootScene extends Phaser.Scene {
     rect(0xd4a574, 28, 26, 4, 6);   // 右拳
     rect(0xcc6010, 6, 34, 8, 14);   // 左腿
     rect(0xcc6010, 18, 34, 8, 14);  // 右腿
-    rect(0x8b6914, 30, 8, 3, 26);   // 铁棍（右侧持）
-    rect(0xdaa520, 28, 8, 6, 3);    // 棍顶环
+    // 禅杖（右侧持，木质杖身 + 双层金环 + 杖首宝珠）
+    rect(0x5a3010, 29, 6, 3, 30);   // 木质杖身
+    rect(0xffd700, 27, 8, 7, 2);    // 上金环
+    rect(0xffd700, 27, 14, 7, 2);   // 下金环
+    rect(0xdaa520, 27, 3, 7, 4);    // 杖首底座
+    rect(0xfff2a8, 29, 2, 3, 3);    // 杖首宝珠高光
     g.generateTexture('monk_boss', 32, 48);
 
     // 少林方丈 NPC（橙黄僧袍，光头戒疤，32×64）
@@ -355,6 +371,100 @@ export class BootScene extends Phaser.Scene {
     rect(0x228b22, 8, 10, 4, 3);   // 小葱
     rect(0xd4691e, 14, 10, 4, 3);  // 辣椒红
     g.generateTexture('food_tofu', 28, 28);
+
+    // 华山花岗岩平台（浅灰白，五峰通用石阶）
+    g.clear();
+    rect(0xc4ccd4, 0, 0, 32, 6);   // 花岗岩顶面
+    rect(0xa8b2ba, 0, 4, 32, 2);   // 缝隙
+    rect(0x8a949c, 0, 6, 32, 26);  // 岩体
+    rect(0x9aa4ac, 12, 6, 2, 26);  // 纵向裂纹
+    rect(0xd8e0e6, 0, 0, 14, 2);   // 左高光
+    rect(0xd8e0e6, 18, 0, 14, 2);  // 右高光
+    g.generateTexture('tile_granite', 32, 32);
+
+    // 华山剑客（敌人，灰蓝劲装+短剑，32×48）
+    g.clear();
+    rect(0xd4a574, 10, 4, 12, 10);  // 面部
+    rect(0x2a2a2a, 8, 0, 16, 6);    // 束发头顶
+    rect(0x3d1a00, 12, 8, 2, 2);    // 左眼
+    rect(0x3d1a00, 18, 8, 2, 2);    // 右眼
+    rect(0xd4a574, 14, 11, 4, 2);   // 嘴
+    rect(0x5a6a7a, 6, 14, 20, 18);  // 灰蓝劲装身体
+    rect(0x748494, 8, 16, 16, 8);   // 衣服高光
+    rect(0xdedede, 6, 30, 20, 2);   // 白色腰带
+    rect(0xd4a574, 2, 16, 4, 10);   // 左臂
+    rect(0xd4a574, 26, 16, 4, 10);  // 右臂（持剑）
+    rect(0xb8b8c8, 28, 6, 2, 16);   // 剑刃
+    rect(0x5a3010, 27, 22, 4, 3);   // 剑柄
+    rect(0x5a6a7a, 6, 32, 8, 12);   // 左腿
+    rect(0x5a6a7a, 18, 32, 8, 12);  // 右腿
+    rect(0x1a1a1a, 4, 42, 10, 4);   // 左靴
+    rect(0x1a1a1a, 18, 42, 10, 4);  // 右靴
+    g.generateTexture('swordsman_enemy', 32, 48);
+
+    // 白虎剑仙（BOSS，白袍虎纹+长剑，32×48）
+    g.clear();
+    rect(0xd4a574, 8, 4, 16, 12);   // 面部
+    rect(0xf0f0f0, 5, 0, 22, 6);    // 白发/道冠
+    rect(0xdedede, 4, 2, 24, 4);    // 银色头带
+    rect(0xffffff, 6, 3, 20, 2);    // 头带高光
+    rect(0x3d1a00, 10, 9, 3, 2);    // 左眼
+    rect(0x3d1a00, 19, 9, 3, 2);    // 右眼
+    rect(0xffffff, 9, 13, 14, 3);   // 白须
+    rect(0xeaeaea, 4, 16, 24, 18);  // 白袍身
+    rect(0xf8f8f8, 6, 18, 20, 6);   // 袍面高光
+    rect(0x2c2c2c, 4, 24, 24, 4);   // 虎纹黑条1
+    rect(0x2c2c2c, 4, 30, 24, 3);   // 虎纹黑条2
+    rect(0xeaeaea, 0, 16, 4, 16);   // 左臂
+    rect(0xeaeaea, 28, 16, 4, 16);  // 右臂
+    rect(0xd4a574, 0, 26, 4, 6);    // 左拳
+    rect(0xd4a574, 28, 26, 4, 6);   // 右拳
+    rect(0xeaeaea, 6, 34, 8, 14);   // 左腿
+    rect(0xeaeaea, 18, 34, 8, 14);  // 右腿
+    rect(0xdfe6ec, 30, 4, 2, 26);   // 长剑剑刃
+    rect(0xffffff, 30, 4, 1, 20);   // 剑脊高光
+    rect(0xdaa520, 27, 26, 7, 3);   // 剑护手
+    rect(0x5a3010, 28, 29, 4, 4);   // 剑柄
+    g.generateTexture('huashan_boss', 32, 48);
+
+    // 华山剑圣 NPC（白袍长须，32×64）
+    g.clear();
+    rect(0xd4a574, 10, 8, 12, 10);  // 面部
+    rect(0xf0f0f0, 9, 3, 14, 7);    // 白发束顶
+    rect(0xffffff, 8, 4, 16, 3);    // 道冠高光
+    rect(0x3d1a00, 12, 12, 2, 1);   // 左眼
+    rect(0x3d1a00, 18, 12, 2, 1);   // 右眼
+    rect(0xf5f5f5, 10, 15, 12, 8);  // 长白须
+    rect(0xeaeaea, 8, 18, 16, 18);  // 白袍上身
+    rect(0xd8d8d8, 6, 20, 20, 4);   // 袍面高光
+    rect(0xeaeaea, 4, 18, 4, 16);   // 左臂
+    rect(0xeaeaea, 24, 18, 4, 16);  // 右臂
+    rect(0xeaeaea, 8, 36, 16, 16);  // 下摆
+    rect(0x3d2000, 6, 50, 10, 6);   // 左鞋
+    rect(0x3d2000, 16, 50, 10, 6);  // 右鞋
+    rect(0x5a3000, 2, 10, 3, 46);   // 长剑鞘/杖
+    rect(0xdaa520, 0, 8, 6, 4);     // 杖顶金饰
+    g.generateTexture('npc_swordsage', 32, 64);
+
+    // 白虎晶 — 西岳华山气运碎片（银白虎纹晶体，24×24）
+    g.clear();
+    rect(0xf5f5f5, 10, 0, 4, 4);
+    rect(0xe8e8e8, 6, 4, 12, 4);
+    rect(0xd0d8dc, 2, 8, 20, 8);
+    rect(0xf0f0f0, 6, 16, 12, 4);
+    rect(0xfafafa, 10, 20, 4, 4);
+    rect(0x9aa4ac, 4, 10, 16, 2);   // 虎纹条纹
+    rect(0xffffff, 12, 2, 2, 2);
+    g.generateTexture('crystal_baihu', 24, 24);
+
+    // 火晶柿子食物（华山特产，28×28）
+    g.clear();
+    rect(0xff6a1a, 3, 8, 22, 16);   // 柿子主体
+    rect(0xff8c42, 5, 10, 12, 6);   // 高光
+    rect(0x2e8b30, 10, 4, 8, 5);    // 绿色蒂
+    rect(0x1e5e20, 12, 3, 4, 3);    // 蒂心
+    rect(0xcc4a00, 3, 20, 22, 4);   // 底部阴影
+    g.generateTexture('food_shizi', 28, 28);
 
     this.scene.start(SCENES.MENU);
   }

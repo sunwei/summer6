@@ -6,6 +6,7 @@ import { MenuScene } from './scenes/MenuScene.js';
 import { HUDScene } from './scenes/HUDScene.js';
 import { WudangScene } from './scenes/WudangScene.js';
 import { SongshanScene } from './scenes/SongshanScene.js';
+import { HuashanScene } from './scenes/HuashanScene.js';
 
 const config = {
   type: Phaser.AUTO,
@@ -29,7 +30,7 @@ const config = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [BootScene, MenuScene, WudangScene, SongshanScene, HUDScene],
+  scene: [BootScene, MenuScene, WudangScene, SongshanScene, HuashanScene, HUDScene],
 };
 
 window.addEventListener('load', () => {
