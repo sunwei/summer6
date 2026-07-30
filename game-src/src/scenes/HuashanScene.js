@@ -41,10 +41,10 @@ export class HuashanScene extends Phaser.Scene {
 
     music.play('huashan');
 
-    this.physics.world.setBounds(0, 0, 6200, 520);
+    this.physics.world.setBounds(0, -2000, 6200, 2560);
     const PLAY_H = GAME_HEIGHT - 80;
     this.cameras.main.setViewport(0, 0, GAME_WIDTH, PLAY_H);
-    this.cameras.main.setBounds(0, 0, 6200, PLAY_H);
+    this.cameras.main.setBounds(0, -600, 6200, 1200); // 全程恒定，覆盖地面到山顶
 
     this.createBackground();
     this.createPlatforms();
@@ -59,7 +59,8 @@ export class HuashanScene extends Phaser.Scene {
     // 重生点初始在东峰入口，与剑圣对话后更新
     this.respawnPoint = { x: 80, y: 390 };
 
-    this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+    this.cameras.main.startFollow(this.player, true, 0.08, 0.10);
+    this.cameras.main.setFollowOffset(0, 138);  // 玩家保持在视口 80% 处（地面感）
 
     this.createEnemies();
     this.physics.add.collider(this.enemies, this.platforms);

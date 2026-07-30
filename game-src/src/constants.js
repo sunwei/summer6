@@ -31,6 +31,7 @@ export const SCENES = {
   SONGSHAN: 'SongshanScene',
   HUASHAN: 'HuashanScene',
   HENGSHAN: 'HengshanjScene',
+  TAISHAN: 'TaishanScene',
 };
 export const ITEMS = {
   CRYSTAL_ZHUQUE: 'crystal_zhuque',
@@ -49,4 +50,5 @@ export const ITEMS = {
   SONGSHAN_COMPLETE: 'songshan_complete',  // 嵩山过关标志
   HUASHAN_COMPLETE: 'huashan_complete',    // 华山过关标志
   HENGSHAN_COMPLETE: 'hengshan_complete',  // 恒山过关标志
+  TAISHAN_COMPLETE: 'taishan_complete',    // 泰山过关标志（五岳归一）
 };

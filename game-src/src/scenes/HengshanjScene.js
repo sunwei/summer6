@@ -60,10 +60,10 @@ export class HengshanjScene extends Phaser.Scene {
 
     music.play('hengshan');
 
-    this.physics.world.setBounds(0, 0, 5500, 520);
+    this.physics.world.setBounds(0, -2000, 5500, 2560);
     const PLAY_H = GAME_HEIGHT - 80;
     this.cameras.main.setViewport(0, 0, GAME_WIDTH, PLAY_H);
-    this.cameras.main.setBounds(0, 0, 5500, PLAY_H);
+    this.cameras.main.setBounds(0, -600, 5500, 1200); // 全程恒定，覆盖地面到山顶
 
     this.createBackground();
     this.createPlatforms();
@@ -77,7 +77,8 @@ export class HengshanjScene extends Phaser.Scene {
 
     this.respawnPoint = { x: 80, y: 390 };
 
-    this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+    this.cameras.main.startFollow(this.player, true, 0.08, 0.10);
+    this.cameras.main.setFollowOffset(0, 138);  // 玩家保持在视口 80% 处（地面感）
 
     this.createEnemies();
     this.physics.add.collider(this.enemies, this.platforms);
@@ -1339,19 +1340,19 @@ export class HengshanjScene extends Phaser.Scene {
   finishLevel() {
     if (this.levelFinished) return;
     this.levelFinished = true;
-    bus.emit(EVENTS.LEVEL_COMPLETE, { next: '五岳归一' });
+    bus.emit(EVENTS.LEVEL_COMPLETE, { next: '泰山' });
 
     const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.55).setScrollFactor(0).setDepth(980);
-    const text = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '🌟 五岳通关！气运归一，蛟龙觉醒！', {
+    const text = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '🌟 恒山通关！前往东岳泰山…', {
       fontSize: '28px', color: '#a8f0e0', fontStyle: 'bold', stroke: '#000000', strokeThickness: 6,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(981);
 
     this.player.setVelocity(0, 0); this.player.isTalking = true;
 
-    this.time.delayedCall(2200, () => {
+    this.time.delayedCall(2000, () => {
       music.stop();
       this.scene.stop(SCENES.HUD);
-      this.scene.start(SCENES.MENU);
+      this.scene.start(SCENES.TAISHAN);
       overlay.destroy(); text.destroy();
     });
   }

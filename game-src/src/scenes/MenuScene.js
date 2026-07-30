@@ -190,7 +190,7 @@ export class MenuScene extends Phaser.Scene {
       { label: '南岳\n衡山', done: true,                              color: 0x8b7355 },
       { label: '武当山',    done: !!collected[ITEMS.TAIJI_SWORD],    color: 0xffd700 },
       { label: '中岳\n嵩山',done: !!collected[ITEMS.SONGSHAN_COMPLETE], color: 0xff9900 },
-      { label: '东岳\n泰山', done: false,                            color: 0x66d9ff },
+      { label: '东岳\n泰山', done: !!collected[ITEMS.TAISHAN_COMPLETE], color: 0x66d9ff },
       { label: '西岳\n华山', done: !!collected[ITEMS.HUASHAN_COMPLETE], color: 0xf0f6ff },
       { label: '北岳\n恒山', done: !!collected[ITEMS.HENGSHAN_COMPLETE], color: 0x7ef7c6 },
     ];
@@ -230,11 +230,13 @@ export class MenuScene extends Phaser.Scene {
     const songDone  = !!collected[ITEMS.SONGSHAN_COMPLETE];
     const huaDone   = !!collected[ITEMS.HUASHAN_COMPLETE];
     const hengDone  = !!collected[ITEMS.HENGSHAN_COMPLETE];
+    const taiDone   = !!collected[ITEMS.TAISHAN_COMPLETE];
 
-    const label = hengDone ? '▶ 五岳归一！(更多内容开发中…)'
-                : huaDone ? '▶ 前往恒山（第四关）'
-                : songDone ? '▶ 前往华山'
-                : hasSword ? '▶ 前往嵩山'
+    const label = taiDone   ? '🌟 五岳归一！（游戏通关！）'
+                : hengDone  ? '▶ 前往泰山（第五关·终章）'
+                : huaDone   ? '▶ 前往恒山（第四关）'
+                : songDone  ? '▶ 前往华山'
+                : hasSword  ? '▶ 前往嵩山'
                 : '▶ 开始旅程';
 
     const button = this.add.image(GAME_WIDTH / 2, 360, 'btn_normal').setInteractive({ useHandCursor: true });
@@ -248,8 +250,10 @@ export class MenuScene extends Phaser.Scene {
 
     button.on('pointerdown', () => {
       if (this.scene.isActive(SCENES.HUD)) this.scene.stop(SCENES.HUD);
-      if (hengDone) {
+      if (taiDone) {
         this.showComingSoon();
+      } else if (hengDone) {
+        this.scene.start(SCENES.TAISHAN);
       } else if (huaDone) {
         this.scene.start(SCENES.HENGSHAN);
       } else if (songDone) {
@@ -313,6 +317,16 @@ export class MenuScene extends Phaser.Scene {
           ITEMS.TAIJI_SWORD, ITEMS.SKILL_TAIJI, ITEMS.CRYSTAL_HUANGLONG,
           ITEMS.CHAN_STAFF, ITEMS.SKILL_YIJINJING, ITEMS.CRYSTAL_BAIHU,
           ITEMS.SONGSHAN_COMPLETE, ITEMS.HUASHAN_COMPLETE,
+        ],
+      },
+      {
+        label: '▶ 泰山（第五关）',
+        scene: SCENES.TAISHAN,
+        unlock: [
+          ITEMS.TAIJI_SWORD, ITEMS.SKILL_TAIJI, ITEMS.CRYSTAL_HUANGLONG,
+          ITEMS.CHAN_STAFF, ITEMS.SKILL_YIJINJING, ITEMS.CRYSTAL_BAIHU,
+          ITEMS.XUANWU_BLADE, ITEMS.SONGSHAN_COMPLETE,
+          ITEMS.HUASHAN_COMPLETE, ITEMS.HENGSHAN_COMPLETE,
         ],
       },
     ];

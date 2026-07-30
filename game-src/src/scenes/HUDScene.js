@@ -124,6 +124,10 @@ export class HUDScene extends Phaser.Scene {
         this.hotbar.flashSlot(10);
         this.showBanner('🗡️ 玄武战刀已获得！Q切换·J攻击！');
       }
+      if (itemKey === ITEMS.CRYSTAL_QINGLONG) {
+        this.hotbar.flashSlot(5);
+        this.showBanner('🐉 青龙晶已获得！气血上限永久+30！');
+      }
     };
 
     this.onCoinsUpdated = ({ coins }) => {

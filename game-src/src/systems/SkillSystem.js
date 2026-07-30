@@ -18,6 +18,7 @@ export class SkillSystem {
       [ITEMS.SONGSHAN_COMPLETE]: false,
       [ITEMS.HUASHAN_COMPLETE]: false,
       [ITEMS.HENGSHAN_COMPLETE]: false,
+      [ITEMS.TAISHAN_COMPLETE]: false,
     };
     this.coins = 0;
   }

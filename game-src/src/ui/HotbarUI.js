@@ -34,7 +34,7 @@ const ITEM_TEXTURES = {
   [ITEMS.CRYSTAL_HUANGLONG]: 'crystal_yellow',
   [ITEMS.CRYSTAL_BAIHU]: 'crystal_yellow',
   [ITEMS.CRYSTAL_XUANWU]: 'crystal_yellow',
-  [ITEMS.CRYSTAL_QINGLONG]: 'crystal_yellow',
+  [ITEMS.CRYSTAL_QINGLONG]: 'crystal_qinglong_item',
   [ITEMS.SKILL_TAIJI]: 'skill_taiji_icon',
   [ITEMS.SKILL_YIJINJING]: 'skill_yijin_icon',
   [ITEMS.TAIJI_SWORD]: 'taiji_sword',
