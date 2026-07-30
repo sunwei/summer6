@@ -83,6 +83,7 @@ export class WudangScene extends Phaser.Scene {
 
     this.cameras.main.startFollow(this.player, true, 0.08, 0.10);
     this.cameras.main.setFollowOffset(0, 138);  // 玩家保持在视口 80% 处（地面感）
+    this.cameras.main.setDeadzone(8, 320);   // 跳跃死区：单次跳跃(±160px)内摄像机静止，避免窗口跟着抖动
 
     this.createEnemies();
     this.physics.add.collider(this.enemies, this.platforms);
