@@ -30,6 +30,7 @@ export const SCENES = {
   WUDANG: 'WudangScene',
   SONGSHAN: 'SongshanScene',
   HUASHAN: 'HuashanScene',
+  HENGSHAN: 'HengshanjScene',
 };
 export const ITEMS = {
   CRYSTAL_ZHUQUE: 'crystal_zhuque',
@@ -44,6 +45,8 @@ export const ITEMS = {
   SKILL_YIJINJING: 'skill_yijinjing',
   TAIJI_SWORD: 'taiji_sword',
   CHAN_STAFF: 'chan_staff',       // 少林禅杖（嵩山BOSS战后供杖台获得）
+  XUANWU_BLADE: 'xuanwu_blade',  // 玄武战刀（恒山排队后获得）
   SONGSHAN_COMPLETE: 'songshan_complete',  // 嵩山过关标志
   HUASHAN_COMPLETE: 'huashan_complete',    // 华山过关标志
+  HENGSHAN_COMPLETE: 'hengshan_complete',  // 恒山过关标志
 };

@@ -40,4 +40,5 @@ export const EVENTS = {
   PLAYER_HURT: 'player_hurt',
   CRYSTAL_SKILL: 'crystal_skill',
   LEVEL_COMPLETE: 'level_complete',
+  COINS_UPDATED: 'coins_updated',     // { coins } — emitted when coin total changes
 };

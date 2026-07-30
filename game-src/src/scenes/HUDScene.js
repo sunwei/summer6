@@ -120,7 +120,27 @@ export class HUDScene extends Phaser.Scene {
         this.hotbar.flashSlot(7);
         this.showBanner('💪 易筋经已习得！V键爆发！');
       }
+      if (itemKey === ITEMS.XUANWU_BLADE) {
+        this.hotbar.flashSlot(10);
+        this.showBanner('🗡️ 玄武战刀已获得！Q切换·J攻击！');
+      }
     };
+
+    this.onCoinsUpdated = ({ coins }) => {
+      if (this.coinText) this.coinText.setText(`🪙 ${coins}`);
+    };
+
+    // 金币显示（右上角）
+    this.coinText = this.add
+      .text(GAME_WIDTH - 10, 50, `🪙 ${skillSystem.getCoins()}`, {
+        fontSize: '16px',
+        color: '#ffd700',
+        stroke: '#000000',
+        strokeThickness: 3,
+      })
+      .setOrigin(1, 0)
+      .setScrollFactor(0)
+      .setDepth(960);
 
     this.onPlayerHurt = ({ hp, maxHp, wisdom, attack }) => {
       this.setHealth(hp, maxHp);
@@ -136,11 +156,13 @@ export class HUDScene extends Phaser.Scene {
     bus.on(EVENTS.ITEM_COLLECTED, this.onItemCollected);
     bus.on(EVENTS.PLAYER_HURT, this.onPlayerHurt);
     bus.on(EVENTS.SKILL_COOLDOWN, this.onSkillCooldown);
+    bus.on(EVENTS.COINS_UPDATED, this.onCoinsUpdated);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       bus.off(EVENTS.ITEM_COLLECTED, this.onItemCollected);
       bus.off(EVENTS.PLAYER_HURT, this.onPlayerHurt);
       bus.off(EVENTS.SKILL_COOLDOWN, this.onSkillCooldown);
+      bus.off(EVENTS.COINS_UPDATED, this.onCoinsUpdated);
     });
   }
 

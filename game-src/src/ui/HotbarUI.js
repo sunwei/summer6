@@ -11,7 +11,8 @@ const SLOT_ITEMS = [
   ITEMS.SKILL_TAIJI,
   ITEMS.SKILL_YIJINJING,
   ITEMS.TAIJI_SWORD,
-  null,
+  ITEMS.CHAN_STAFF,
+  ITEMS.XUANWU_BLADE,
 ];
 
 // Keyboard key shown in the bottom-right corner of each slot
@@ -24,6 +25,8 @@ const SLOT_KEY_LABELS = {
   [ITEMS.SKILL_TAIJI]:       '',   // 随J键自动触发八卦弹，无独立热键
   [ITEMS.SKILL_YIJINJING]:   'V',   // 易筋经爆发
   [ITEMS.TAIJI_SWORD]:       '⚔',  // 装备自动生效
+  [ITEMS.CHAN_STAFF]:         '🦯', // 禅杖
+  [ITEMS.XUANWU_BLADE]:      '🗡️', // 玄武战刀
 };
 
 const ITEM_TEXTURES = {
@@ -35,6 +38,8 @@ const ITEM_TEXTURES = {
   [ITEMS.SKILL_TAIJI]: 'skill_taiji_icon',
   [ITEMS.SKILL_YIJINJING]: 'skill_yijin_icon',
   [ITEMS.TAIJI_SWORD]: 'taiji_sword',
+  [ITEMS.CHAN_STAFF]: 'chan_staff',
+  [ITEMS.XUANWU_BLADE]: 'xuanwu_blade',
 };
 
 const ITEM_TINTS = {
@@ -46,6 +51,8 @@ const ITEM_TINTS = {
   [ITEMS.SKILL_TAIJI]: 0xffd700,
   [ITEMS.SKILL_YIJINJING]: 0xff9f43,
   [ITEMS.TAIJI_SWORD]: 0xd8f0ff,
+  [ITEMS.CHAN_STAFF]: 0xdaa520,
+  [ITEMS.XUANWU_BLADE]: 0x7ef7c6,
 };
 
 export class HotbarUI {
@@ -60,7 +67,7 @@ export class HotbarUI {
   }
 
   createSlots() {
-    const barWidth = 9 * 48;
+    const barWidth = 10 * 48;
     const startX = GAME_WIDTH / 2 - barWidth / 2 + 24;
     const y = GAME_HEIGHT - 50; // sits in the 80px HUD zone below game viewport
 

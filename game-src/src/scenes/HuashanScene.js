@@ -1036,7 +1036,7 @@ export class HuashanScene extends Phaser.Scene {
     bus.emit(EVENTS.LEVEL_COMPLETE, { next: '恒山' });
 
     const overlay = this.add.rectangle(GAME_WIDTH / 2, GAME_HEIGHT / 2, GAME_WIDTH, GAME_HEIGHT, 0x000000, 0.45).setScrollFactor(0).setDepth(980);
-    const text = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '🗺️ 华山通关！北岳恒山，敬请期待！', {
+    const text = this.add.text(GAME_WIDTH / 2, GAME_HEIGHT / 2, '🗺️ 华山通关！前往北岳恒山…', {
       fontSize: '30px', color: '#fff1a6', fontStyle: 'bold', stroke: '#000000', strokeThickness: 6,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(981);
 
@@ -1045,7 +1045,7 @@ export class HuashanScene extends Phaser.Scene {
     this.time.delayedCall(1800, () => {
       music.stop();
       this.scene.stop(SCENES.HUD);
-      this.scene.start(SCENES.MENU);
+      this.scene.start(SCENES.HENGSHAN);
       overlay.destroy(); text.destroy();
     });
   }

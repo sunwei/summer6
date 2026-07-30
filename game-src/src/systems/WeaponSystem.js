@@ -115,6 +115,15 @@ const DEFS = {
     cooldownMsPerWisdom: 0,
     cooldownMsMin: 4500,
   },
+
+  // ─────────────── 玄武战刀挥击（恒山排队后获得，强化J键攻击）──────────
+  XUANWU_BLADE: {
+    baseDamage: 30,         // 厚重刀斩，伤害介于剑与禅杖之间
+    baseRange: 60,          // 刀身较宽
+    baseHeight: 64,
+    rangePerWisdom: 0.55,
+    rangeMax: 120,
+  },
 };
 
 // Auto-derive string constants so callers do: weaponSystem.calc(WEAPONS.MELEE, …)

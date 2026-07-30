@@ -14,9 +14,12 @@ export class SkillSystem {
       [ITEMS.SKILL_YIJINJING]: false,
       [ITEMS.TAIJI_SWORD]: false,
       [ITEMS.CHAN_STAFF]: false,
+      [ITEMS.XUANWU_BLADE]: false,
       [ITEMS.SONGSHAN_COMPLETE]: false,
       [ITEMS.HUASHAN_COMPLETE]: false,
+      [ITEMS.HENGSHAN_COMPLETE]: false,
     };
+    this.coins = 0;
   }
 
   collect(itemKey) {
@@ -34,6 +37,22 @@ export class SkillSystem {
       inventory: this.getInventory(),
     });
     return true;
+  }
+
+  addCoins(amount) {
+    this.coins += amount;
+    bus.emit(EVENTS.COINS_UPDATED, { coins: this.coins });
+  }
+
+  spendCoins(amount) {
+    if (this.coins < amount) return false;
+    this.coins -= amount;
+    bus.emit(EVENTS.COINS_UPDATED, { coins: this.coins });
+    return true;
+  }
+
+  getCoins() {
+    return this.coins;
   }
 
   hasAll() {

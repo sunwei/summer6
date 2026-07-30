@@ -58,6 +58,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.staffSpinFired = false;
     this.staffSpinCooldown = 0;       // 禅杖旋风扫冷却到期时间
     this._staffChargeVisual = null;
+    this.bladeCharging = false;       // J长按蓄力中（玄武战刀模式）
+    this.bladeChargeStart = 0;
+    this.bladeSlamFired = false;
+    this.bladeSlamCooldown = 0;       // 玄武盾斩冷却到期时间
+    this._bladeChargeVisual = null;
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -114,9 +119,11 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.skills[ITEMS.SKILL_YIJINJING]   = !!inventoryState[ITEMS.SKILL_YIJINJING];
     this.skills[ITEMS.TAIJI_SWORD]       = !!inventoryState[ITEMS.TAIJI_SWORD];
     this.skills[ITEMS.CHAN_STAFF]        = !!inventoryState[ITEMS.CHAN_STAFF];
+    this.skills[ITEMS.XUANWU_BLADE]     = !!inventoryState[ITEMS.XUANWU_BLADE];
     // 若当前所持武器已不再解锁，重置为拳模式
     if (this.activeWeapon === 'sword' && !this.skills[ITEMS.TAIJI_SWORD]) this.activeWeapon = 'palm';
     if (this.activeWeapon === 'staff' && !this.skills[ITEMS.CHAN_STAFF]) this.activeWeapon = 'palm';
+    if (this.activeWeapon === 'blade' && !this.skills[ITEMS.XUANWU_BLADE]) this.activeWeapon = 'palm';
   }
 
   isGuarding() {
@@ -145,6 +152,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this._staffChargeVisual && this._staffChargeVisual.active) {
       this._staffChargeVisual.setPosition(this.x, this.y - 6);
     }
+    // 玄武刀蓄力光圈跟随（在 updateBladeCharge 里更新）
+    if (this._bladeChargeVisual && this._bladeChargeVisual.active) {
+      this._bladeChargeVisual.setPosition(this.x, this.y - 6);
+    }
 
     if (this.isTalking) {
       this.state = PLAYER_STATES.TALKING;
@@ -157,6 +168,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // J key — 攻击
     // 剑模式：短按=普通斩，长按1秒（冷却完毕）=太极旋斩
     // 禅杖模式：短按=普通挥杖，长按1秒（冷却完毕）=禅杖旋风扫
+    // 刀模式：短按=刀斩，长按1秒（冷却完毕）=玄武盾斩
     // 拳模式：短按=拳击+元气弹
     {
       const now = this.scene.time.now;
@@ -164,6 +176,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       const attackJustUp   = Phaser.Input.Keyboard.JustUp(this.keys.attack);
       const useSwordMode   = this.activeWeapon === 'sword' && this.skills[ITEMS.TAIJI_SWORD];
       const useStaffMode   = this.activeWeapon === 'staff' && this.skills[ITEMS.CHAN_STAFF];
+      const useBladeMode   = this.activeWeapon === 'blade' && this.skills[ITEMS.XUANWU_BLADE];
 
       if (useSwordMode) {
         // 开始蓄力
@@ -219,14 +232,41 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
             this.activateStaffWhirl();
           }
         }
+      } else if (useBladeMode) {
+        // 开始蓄力
+        if (attackJustDown && !this.bladeCharging && !this.isAttacking) {
+          this.bladeCharging = true;
+          this.bladeSlamFired = false;
+          this.bladeChargeStart = now;
+          if (now >= this.bladeSlamCooldown) this.startBladeCharge();
+        }
+
+        if (this.bladeCharging) {
+          const elapsed = now - this.bladeChargeStart;
+          const canSlam = now >= this.bladeSlamCooldown;
+          if (canSlam) this.updateBladeCharge(Math.min(elapsed / 1000, 1.0));
+
+          if (attackJustUp) {
+            // 短按松开 → 普通刀斩
+            this.bladeCharging = false;
+            if (canSlam) this.cancelBladeCharge();
+            this.basicAttack();
+          } else if (canSlam && elapsed >= 1000 && !this.bladeSlamFired) {
+            // 满1秒 → 玄武盾斩
+            this.bladeSlamFired = true;
+            this.bladeCharging = false;
+            this.cancelBladeCharge();
+            this.activateBladeSlam();
+          }
+        }
       } else {
         // 拳模式
         if (attackJustDown) this.basicAttack();
       }
     }
 
-    // Q key — 武器切换（依次循环：拳 → 剑（若持有）→ 禅杖（若持有）→ 拳）
-    if ((this.skills[ITEMS.TAIJI_SWORD] || this.skills[ITEMS.CHAN_STAFF]) && Phaser.Input.Keyboard.JustDown(this.keys.weaponSwitch)) {
+    // Q key — 武器切换（依次循环：拳 → 剑（若持有）→ 禅杖（若持有）→ 刀（若持有）→ 拳）
+    if ((this.skills[ITEMS.TAIJI_SWORD] || this.skills[ITEMS.CHAN_STAFF] || this.skills[ITEMS.XUANWU_BLADE]) && Phaser.Input.Keyboard.JustDown(this.keys.weaponSwitch)) {
       this.cycleWeapon();
     }
 
@@ -363,7 +403,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     // 根据当前武器模式选择伤害/范围
     const useSword = this.activeWeapon === 'sword' && this.skills[ITEMS.TAIJI_SWORD];
     const useStaff = this.activeWeapon === 'staff' && this.skills[ITEMS.CHAN_STAFF];
-    const weaponKey = useSword ? WEAPONS.TAIJI_SWORD : useStaff ? WEAPONS.CHAN_STAFF : WEAPONS.MELEE;
+    const useBlade = this.activeWeapon === 'blade' && this.skills[ITEMS.XUANWU_BLADE];
+    const weaponKey = useSword ? WEAPONS.TAIJI_SWORD : useStaff ? WEAPONS.CHAN_STAFF : useBlade ? WEAPONS.XUANWU_BLADE : WEAPONS.MELEE;
     const ms = weaponSystem.calc(weaponKey, { attackBonus: this.attackBonus, wisdomBonus: this.wisdomBonus });
     const finalDamage = Math.round(ms.damage * this.attackMultiplier);
     const hitboxX = this.x + (this.facingRight ? ms.range : -ms.range);
@@ -382,27 +423,30 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       });
     }
 
-    // 太极剑：金色斩击特效 / 禅杖：金环挥杖特效
+    // 太极剑：金色斩击特效 / 禅杖：金环挥杖特效 / 玄武刀：暗蓝刀斩特效
     if (useSword) {
       this.showSwordSlash();
     } else if (useStaff) {
       this.showStaffSwing();
+    } else if (useBlade) {
+      this.showBladeSlash();
     }
 
     this.scene.time.delayedCall(100, () => hitbox.destroy());
     this.scene.time.delayedCall(200, () => { this.isAttacking = false; });
 
     // 八卦拳模式下且已习得太极拳才发射元气弹
-    if (!useSword && !useStaff && this.skills[ITEMS.SKILL_TAIJI]) {
+    if (!useSword && !useStaff && !useBlade && this.skills[ITEMS.SKILL_TAIJI]) {
       this.shootBaguaOrb();
     }
   }
 
-  // 依次循环武器：拳 → 剑（若持有）→ 禅杖（若持有）→ 拳
+  // 依次循环武器：拳 → 剑（若持有）→ 禅杖（若持有）→ 刀（若持有）→ 拳
   cycleWeapon() {
     const order = ['palm'];
     if (this.skills[ITEMS.TAIJI_SWORD]) order.push('sword');
     if (this.skills[ITEMS.CHAN_STAFF]) order.push('staff');
+    if (this.skills[ITEMS.XUANWU_BLADE]) order.push('blade');
     const idx = order.indexOf(this.activeWeapon);
     this.activeWeapon = order[(idx + 1) % order.length];
     this.showWeaponNotice();
@@ -411,8 +455,14 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   // 武器切换提示
   showWeaponNotice() {
     const scene = this.scene;
-    const label = this.activeWeapon === 'sword' ? '⚔️ 太极剑' : this.activeWeapon === 'staff' ? '🦯 少林禅杖' : '☯ 太极八卦掌';
-    const color = this.activeWeapon === 'sword' ? '#ffd700' : this.activeWeapon === 'staff' ? '#daa520' : '#88eeff';
+    const label = this.activeWeapon === 'sword' ? '⚔️ 太极剑'
+                : this.activeWeapon === 'staff' ? '🦯 少林禅杖'
+                : this.activeWeapon === 'blade' ? '🗡️ 玄武战刀'
+                : '☯ 太极八卦掌';
+    const color = this.activeWeapon === 'sword' ? '#ffd700'
+                : this.activeWeapon === 'staff' ? '#daa520'
+                : this.activeWeapon === 'blade' ? '#7ef7c6'
+                : '#88eeff';
     const notice = scene.add.text(this.x, this.y - 52, label, {
       fontSize: '18px', color, stroke: '#000000', strokeThickness: 3,
       backgroundColor: '#00000088', padding: { x: 6, y: 3 },
@@ -659,7 +709,133 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     scene.tweens.add({ targets: streak, alpha: 0, scaleX: 1.5, duration: 110, onComplete: () => streak.destroy() });
   }
 
-  // 八卦元气弹（J键 + 太极拳）
+  // ── 玄武战刀（刀模式蓄力 / 普通刀斩 / 玄武盾斩）──────────────
+
+  // 玄武刀普通斩击光效
+  showBladeSlash() {
+    const scene = this.scene;
+    const dir = this.facingRight ? 1 : -1;
+    const sx = this.x + dir * 42;
+    const sy = this.y - 8;
+
+    const slash = scene.add.rectangle(sx, sy, 74, 56, 0x26c6da, 0.52)
+      .setDepth(this.depth + 1).setRotation(dir > 0 ? -0.22 : 0.22);
+    scene.tweens.add({ targets: slash, alpha: 0, scaleX: 1.7, scaleY: 1.4, duration: 145, ease: 'Quad.easeOut', onComplete: () => slash.destroy() });
+
+    const streak1 = scene.add.rectangle(sx - dir * 7, sy + 3, 58, 5, 0x00e5ff, 0.92)
+      .setDepth(this.depth + 2).setRotation(dir > 0 ? -0.44 : 0.44);
+    scene.tweens.add({ targets: streak1, alpha: 0, scaleX: 1.6, duration: 105, onComplete: () => streak1.destroy() });
+
+    const streak2 = scene.add.rectangle(sx - dir * 4, sy + 12, 46, 3, 0x00e5ff, 0.65)
+      .setDepth(this.depth + 2).setRotation(dir > 0 ? -0.5 : 0.5);
+    scene.tweens.add({ targets: streak2, alpha: 0, scaleX: 1.4, duration: 95, onComplete: () => streak2.destroy() });
+  }
+
+  // 开始玄武刀蓄力光圈
+  startBladeCharge() {
+    if (this._bladeChargeVisual) this._bladeChargeVisual.destroy();
+    const scene = this.scene;
+    const container = scene.add.container(this.x, this.y - 6);
+    container.setDepth(this.depth + 1);
+    this._bladeChargeOuter = scene.add.circle(0, 0, 8, 0x26c6da, 0).setStrokeStyle(3, 0x00e5ff, 0.85);
+    this._bladeChargeInner = scene.add.circle(0, 0, 4, 0xb2ebf2, 0.3);
+    container.add([this._bladeChargeInner, this._bladeChargeOuter]);
+    this._bladeChargeVisual = container;
+  }
+
+  // 每帧更新玄武刀蓄力光圈（progress: 0~1）
+  updateBladeCharge(progress) {
+    if (!this._bladeChargeVisual || !this._bladeChargeVisual.active) return;
+    const r = 8 + progress * 30;
+    this._bladeChargeOuter.setRadius(r).setAlpha(0.5 + progress * 0.5);
+    this._bladeChargeInner.setRadius(3 + progress * 9).setAlpha(progress * 0.75);
+    if (progress >= 0.85) {
+      this._bladeChargeVisual.setAlpha(0.55 + Math.sin(Date.now() * 0.024) * 0.45);
+    }
+  }
+
+  // 取消玄武刀蓄力
+  cancelBladeCharge() {
+    this.bladeCharging = false;
+    if (this._bladeChargeVisual) {
+      const cv = this._bladeChargeVisual;
+      this._bladeChargeVisual = null;
+      this.scene.tweens.add({
+        targets: cv, alpha: 0, duration: 160,
+        onComplete: () => { if (cv && cv.active) cv.destroy(); },
+      });
+    }
+  }
+
+  // 玄武盾斩（长按1秒后触发，前向重型冲击波）
+  activateBladeSlam() {
+    if (this.isAttacking || this.isTalking) return;
+    this.isAttacking = true;
+    this.bladeSlamCooldown = this.scene.time.now + 3200;
+    this.setTexture('player_attack');
+    sfx.play('attack');
+
+    const scene = this.scene;
+    const dir = this.facingRight ? 1 : -1;
+    const slamRange = 100;
+    const slamDamage = Math.round(80 * this.attackMultiplier);
+
+    // 提示文字
+    const notice = scene.add.text(this.x, this.y - 62, '🗡️ 玄武盾斩！', {
+      fontSize: '17px', color: '#7ef7c6', stroke: '#000000', strokeThickness: 3,
+      backgroundColor: '#00000088', padding: { x: 6, y: 3 },
+    }).setOrigin(0.5).setDepth(500);
+    scene.tweens.add({ targets: notice, alpha: 0, y: notice.y - 28, duration: 900, onComplete: () => notice.destroy() });
+
+    // 龟甲护盾扩散环（暗蓝/青色）
+    const ring1 = scene.add.circle(this.x, this.y - 8, 8, 0x26c6da, 0)
+      .setStrokeStyle(5, 0x00e5ff, 0.92).setDepth(this.depth + 2);
+    scene.tweens.add({ targets: ring1, scale: { from: 0.5, to: slamRange / 8 * 1.2 }, alpha: 0, duration: 460, ease: 'Quad.easeOut', onComplete: () => ring1.destroy() });
+
+    const ring2 = scene.add.circle(this.x, this.y - 8, 5, 0xb2ebf2, 0)
+      .setStrokeStyle(2, 0x26c6da, 0.7).setDepth(this.depth + 2);
+    scene.tweens.add({ targets: ring2, scale: { from: 1, to: slamRange / 5 * 1.5 }, alpha: 0, duration: 580, ease: 'Cubic.easeOut', onComplete: () => ring2.destroy() });
+
+    // 8道玄武刀气（前向扇形，深蓝色调）
+    for (let i = 0; i < 8; i++) {
+      const spread = (i / 7) * 0.9 - 0.45;
+      const angle = spread;
+      const delay = i * 36;
+      scene.time.delayedCall(delay, () => {
+        if (!this.active) return;
+        const sx = this.x + dir * (slamRange * 0.5 + i * 4);
+        const sy = this.y - 8 + Math.sin(angle) * slamRange * 0.4;
+        const slash = scene.add.rectangle(sx, sy, 48, 8, 0x26c6da, 0.9)
+          .setDepth(this.depth + 3).setRotation(dir > 0 ? angle : Math.PI + angle);
+        const glow = scene.add.rectangle(sx, sy, 60, 14, 0x00e5ff, 0.32)
+          .setDepth(this.depth + 2).setRotation(dir > 0 ? angle : Math.PI + angle);
+        scene.tweens.add({ targets: [slash, glow], alpha: 0, scaleX: 2.3, scaleY: 0.25, duration: 220, ease: 'Quad.easeOut', onComplete: () => { slash.destroy(); glow.destroy(); } });
+      });
+    }
+
+    // 判断伤害（前方扇形范围）
+    scene.time.delayedCall(80, () => {
+      if (!scene || !scene.enemies) return;
+      scene.enemies.getChildren().forEach(enemy => {
+        if (!enemy.active) return;
+        const dx = enemy.x - this.x;
+        const dy = enemy.y - this.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const inDir = dir > 0 ? dx > 0 : dx < 0;
+        if (dist <= slamRange + 14 && inDir) {
+          if (scene.damageEnemy) scene.damageEnemy(enemy, slamDamage);
+          // 击退
+          enemy.setVelocityX(dir * 280);
+        }
+      });
+    });
+
+    // 震屏
+    scene.cameras.main.shake(160, 0.009);
+
+    // 结束攻击状态
+    scene.time.delayedCall(540, () => { this.isAttacking = false; });
+  }
   shootBaguaOrb() {
     const scene = this.scene;
     const dir = this.facingRight ? 1 : -1;

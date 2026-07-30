@@ -192,7 +192,7 @@ export class MenuScene extends Phaser.Scene {
       { label: '中岳\n嵩山',done: !!collected[ITEMS.SONGSHAN_COMPLETE], color: 0xff9900 },
       { label: '东岳\n泰山', done: false,                            color: 0x66d9ff },
       { label: '西岳\n华山', done: !!collected[ITEMS.HUASHAN_COMPLETE], color: 0xf0f6ff },
-      { label: '北岳\n恒山', done: false,                            color: 0x7ef7c6 },
+      { label: '北岳\n恒山', done: !!collected[ITEMS.HENGSHAN_COMPLETE], color: 0x7ef7c6 },
     ];
 
     const spacing = 140;
@@ -229,8 +229,10 @@ export class MenuScene extends Phaser.Scene {
     const hasSword  = !!collected[ITEMS.TAIJI_SWORD];
     const songDone  = !!collected[ITEMS.SONGSHAN_COMPLETE];
     const huaDone   = !!collected[ITEMS.HUASHAN_COMPLETE];
+    const hengDone  = !!collected[ITEMS.HENGSHAN_COMPLETE];
 
-    const label = huaDone ? '▶ 继续旅程 (更多关卡开发中…)'
+    const label = hengDone ? '▶ 五岳归一！(更多内容开发中…)'
+                : huaDone ? '▶ 前往恒山（第四关）'
                 : songDone ? '▶ 前往华山'
                 : hasSword ? '▶ 前往嵩山'
                 : '▶ 开始旅程';
@@ -246,9 +248,10 @@ export class MenuScene extends Phaser.Scene {
 
     button.on('pointerdown', () => {
       if (this.scene.isActive(SCENES.HUD)) this.scene.stop(SCENES.HUD);
-      if (huaDone) {
-        // 更多关卡开发中 — 回到菜单或显示提示
+      if (hengDone) {
         this.showComingSoon();
+      } else if (huaDone) {
+        this.scene.start(SCENES.HENGSHAN);
       } else if (songDone) {
         this.scene.start(SCENES.HUASHAN);
       } else if (hasSword) {
@@ -301,6 +304,15 @@ export class MenuScene extends Phaser.Scene {
         unlock: [
           ITEMS.TAIJI_SWORD, ITEMS.SKILL_TAIJI, ITEMS.CRYSTAL_HUANGLONG,
           ITEMS.CHAN_STAFF, ITEMS.SKILL_YIJINJING, ITEMS.SONGSHAN_COMPLETE,
+        ],
+      },
+      {
+        label: '▶ 恒山（第四关）',
+        scene: SCENES.HENGSHAN,
+        unlock: [
+          ITEMS.TAIJI_SWORD, ITEMS.SKILL_TAIJI, ITEMS.CRYSTAL_HUANGLONG,
+          ITEMS.CHAN_STAFF, ITEMS.SKILL_YIJINJING, ITEMS.CRYSTAL_BAIHU,
+          ITEMS.SONGSHAN_COMPLETE, ITEMS.HUASHAN_COMPLETE,
         ],
       },
     ];
